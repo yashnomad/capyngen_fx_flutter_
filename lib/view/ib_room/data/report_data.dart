@@ -1,0 +1,167 @@
+final List<Map<String, dynamic>> allData = [
+  {
+    'name': 'John Smith',
+    'country': 'United States',
+    'city': 'New York',
+    'account': 'TR78901234',
+    'type': 'VIP',
+    'volume': '\$2580.0k',
+    'equity': '\$125,000',
+    'commission': '\$1250.75',
+    'level': 'Level 1'
+  },
+  {
+    'name': 'Emma Wilson',
+    'country': 'United Kingdom',
+    'city': 'London',
+    'account': 'TR45678901',
+    'type': 'Standard',
+    'volume': '\$1890.0k',
+    'equity': '\$98,000',
+    'commission': '\$980.50',
+    'level': 'Level 2'
+  },
+  {
+    'name': 'Carlos Rodriguez',
+    'country': 'Spain',
+    'city': 'Madrid',
+    'account': 'TR12345678',
+    'type': 'Micro',
+    'volume': '\$1425.0k',
+    'equity': '\$74,000',
+    'commission': '\$740.25',
+    'level': 'Level 1'
+  },
+  {
+    'name': 'Hiroshi Tanaka',
+    'country': 'Japan',
+    'city': 'Tokyo',
+    'account': 'TR90123456',
+    'type': 'Standard',
+    'volume': '\$1350.0k',
+    'equity': '\$65,000',
+    'commission': '\$650.80',
+    'level': 'Level 3'
+  },
+  {
+    'name': 'Maria Santos',
+    'country': 'Brazil',
+    'city': 'São Paulo',
+    'account': 'TR67890123',
+    'type': 'Micro',
+    'volume': '\$975.0k',
+    'equity': '\$59,000',
+    'commission': '\$590.30',
+    'level': 'Level 2'
+  },
+  {
+    'name': 'John Smith',
+    'country': 'United States',
+    'city': 'New York',
+    'account': 'TR78901234',
+    'type': 'VIP',
+    'volume': '\$2580.0k',
+    'equity': '\$125,000',
+    'commission': '\$1250.75',
+    'level': 'Level 1'
+  },
+  {
+    'name': 'Emma Wilson',
+    'country': 'United Kingdom',
+    'city': 'London',
+    'account': 'TR45678901',
+    'type': 'Standard',
+    'volume': '\$1890.0k',
+    'equity': '\$98,000',
+    'commission': '\$980.50',
+    'level': 'Level 2'
+  },
+  {
+    'name': 'Carlos Rodriguez',
+    'country': 'Spain',
+    'city': 'Madrid',
+    'account': 'TR12345678',
+    'type': 'Micro',
+    'volume': '\$1425.0k',
+    'equity': '\$74,000',
+    'commission': '\$740.25',
+    'level': 'Level 1'
+  },
+  {
+    'name': 'Hiroshi Tanaka',
+    'country': 'Japan',
+    'city': 'Tokyo',
+    'account': 'TR90123456',
+    'type': 'Standard',
+    'volume': '\$1350.0k',
+    'equity': '\$65,000',
+    'commission': '\$650.80',
+    'level': 'Level 3'
+  },
+  {
+    'name': 'Maria Santos',
+    'country': 'Brazil',
+    'city': 'São Paulo',
+    'account': 'TR67890123',
+    'type': 'Micro',
+    'volume': '\$975.0k',
+    'equity': '\$59,000',
+    'commission': '\$590.30',
+    'level': 'Level 2'
+  },
+  {
+    'name': 'John Smith',
+    'country': 'United States',
+    'city': 'New York',
+    'account': 'TR78901234',
+    'type': 'VIP',
+    'volume': '\$2580.0k',
+    'equity': '\$125,000',
+    'commission': '\$1250.75',
+    'level': 'Level 1'
+  },
+  {
+    'name': 'Emma Wilson',
+    'country': 'United Kingdom',
+    'city': 'London',
+    'account': 'TR45678901',
+    'type': 'Standard',
+    'volume': '\$1890.0k',
+    'equity': '\$98,000',
+    'commission': '\$980.50',
+    'level': 'Level 2'
+  },
+  {
+    'name': 'Carlos Rodriguez',
+    'country': 'Spain',
+    'city': 'Madrid',
+    'account': 'TR12345678',
+    'type': 'Micro',
+    'volume': '\$1425.0k',
+    'equity': '\$74,000',
+    'commission': '\$740.25',
+    'level': 'Level 1'
+  },
+  {
+    'name': 'Hiroshi Tanaka',
+    'country': 'Japan',
+    'city': 'Tokyo',
+    'account': 'TR90123456',
+    'type': 'Standard',
+    'volume': '\$1350.0k',
+    'equity': '\$65,000',
+    'commission': '\$650.80',
+    'level': 'Level 3'
+  },
+  {
+    'name': 'Maria Santos',
+    'country': 'Brazil',
+    'city': 'São Paulo',
+    'account': 'TR67890123',
+    'type': 'Micro',
+    'volume': '\$975.0k',
+    'equity': '\$59,000',
+    'commission': '\$590.30',
+    'level': 'Level 2'
+  },
+];

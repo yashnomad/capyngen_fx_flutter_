@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Capmarket (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_capmarket.dart",
+      "args": ["--flavor", "capmarket"]
+    },
+    {
+      "name": "ElliteFX (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_ellitefx.dart",
+      "args": ["--flavor", "ellitefx"]
+    },
+    {
+      "name": "NestPip (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_nestpip.dart",
+      "args": ["--flavor", "nestpip"]
+    }
+  ]
+}

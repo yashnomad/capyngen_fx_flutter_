@@ -1,0 +1,11 @@
+flutter_native_splash:
+  color: "#FEFEFE"
+  image: assets/image/prime-forex-market/splash.png
+  color_dark: "#FEFEFE"
+  image_dark: assets/image/prime-forex-market/splash.png
+  android_12:
+    image: assets/image/prime-forex-market/splash.png
+    color: "#FEFEFE"
+  web: false
+  android: true
+  ios: true

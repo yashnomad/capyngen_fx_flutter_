@@ -1,0 +1,11 @@
+flutter_native_splash:
+  color: "#F5F5F5"
+  image: assets/image/right-trade/splash.png
+  color_dark: "#F5F5F5"
+  image_dark: assets/image/right-trade/splash.png
+  android_12:
+    image: assets/image/right-trade/splash.png
+    color: "#F5F5F5"
+  web: false
+  android: true
+  ios: true

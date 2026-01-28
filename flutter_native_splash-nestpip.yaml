@@ -1,0 +1,11 @@
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/image/nestpip/splash.png
+  color_dark: "#0D0C0C"
+  image_dark: assets/image/nestpip/splash.png
+  android_12:
+    image: assets/image/nestpip/splash.png
+    color: "#ffffff"
+  web: false
+  android: true
+  ios: true

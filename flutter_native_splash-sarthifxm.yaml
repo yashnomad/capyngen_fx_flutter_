@@ -1,0 +1,11 @@
+﻿flutter_native_splash:
+  color: "#F7F7F7"
+  image: assets/image/sarthifxm/splash.png
+  color_dark: "#F7F7F7"
+  image_dark: assets/image/sarthifxm/splash.png
+  android_12:
+    image: assets/image/sarthifxm/splash.png
+    color: "#F7F7F7"
+  web: false
+  android: true
+  ios: true

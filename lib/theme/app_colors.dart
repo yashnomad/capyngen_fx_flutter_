@@ -1,0 +1,60 @@
+import 'package:exness_clone/theme/pipzo_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:snippet_coder_utils/hex_color.dart';
+import '../config/flavor_config.dart';
+import 'capmarket_colors.dart';
+import 'ellitefx_colors.dart';
+import 'nestpip_colors.dart';
+
+class AppColor {
+  static final Color nestPipColor = Color(0xfff56105);
+  static final Color orangeColor = Colors.orange;
+  static final Color deepPurpleColor = Colors.deepPurple;
+  static final Color lightGrey = Colors.grey.shade200;
+  static final Color mediumGrey = Colors.grey.shade300;
+  static final Color amberColor = Colors.amber;
+  static final Color blueGrey = Colors.blueGrey;
+  static final Color elliteFxColor = Color(0xff0aeca8);
+  static final Color primaforexColor = const Color(0xff25022f);
+  static final Color righttradeColor = const Color(0xff020d2f);
+
+
+  static final Color lightOrange = HexColor('F8AE5F');
+  static final Color darkOrange = HexColor('F79B39');
+  static final Color mainColor = HexColor('F79B39');
+  static final Color appColor = HexColor('32A272');
+  static final Color headerColor = HexColor('F8AE5F');
+  static final Color darkBlue = const Color(0xff01103f);
+  static final Color whiteColor = HexColor('FFFFFF');
+  static final Color blackColor = HexColor('020000');
+  static final Color redColor = HexColor('FF4B4B');
+  static final Color greyColor = Colors.grey;
+  static final Color bgColor = HexColor('EFEFEF');
+  static final Color greenColor = Colors.green;
+  static final Color pinkColor = HexColor('E957C2');
+  static final Color divider = HexColor('808080');
+  static final Color indigoColor = HexColor('7B5BDF');
+  static final Color textColor = HexColor('626364');
+  static final Color lightBlueColor = HexColor('77A6F8');
+  static final Color lightPurpleColor = HexColor('77A6F8');
+  static final Color myStoreQrColor = HexColor('C190F8');
+  static final Color yellowColor = Colors.yellow;
+  static final Color promoteStoreColor = HexColor('AEA4F8');
+  static final Color helpColor = HexColor('6879C1');
+  static final Color darkPurpleColor = HexColor('5B607E');
+  static final Color darkGreenColor = HexColor('3DE994');
+  static final Color pipzoColor = HexColor('283B96');
+  static final Color darkBlueColor = HexColor('283B96');
+  static final Color upgradeGradient1 = HexColor('47F09C');
+  static final Color themeColor = HexColor('F8AE5F');
+  static final Color upgradeGradient2 = HexColor('08904C');
+  static final Color darkIndigo = HexColor('3E4152');
+  static final Color brown = HexColor('E7874B');
+  static final Color golden = HexColor('FBC142');
+  static final Color maroon = HexColor('BA3636');
+  static final Color lightPinkColor = HexColor('FDE2E2');
+  static final Color comingSoonColor = HexColor('F66D70');
+  static final Color navyColor = HexColor('000C66');
+  static final Color transparent = Colors.transparent;
+  static final Color blueColor = Colors.blue;
+}

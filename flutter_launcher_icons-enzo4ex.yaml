@@ -1,0 +1,5 @@
+﻿flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/image/enzo4ex/logo.jpg"
+  min_sdk_android: 21

@@ -1,0 +1,11 @@
+﻿flutter_native_splash:
+  color: "#1E40AF"
+  image: assets/image/innovixcapital/splash.jpg
+  color_dark: "#1E40AF"
+  image_dark: assets/image/innovixcapital/splash.jpg
+  android_12:
+    image: assets/image/innovixcapital/splash.jpg
+    color: "#1E40AF"
+  web: false
+  android: true
+  ios: true

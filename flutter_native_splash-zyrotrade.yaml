@@ -1,0 +1,12 @@
+flutter_native_splash:
+
+  color: "#1E40AF"
+  image: assets/image/zyrotrade/splash.png
+  color_dark: "#1E40AF"
+  image_dark: assets/image/zyrotrade/splash.png
+  android_12:
+    image: assets/image/zyrotrade/splash.png
+    color: "#1E40AF"
+  web: false
+  android: true
+  ios: true

@@ -1,0 +1,11 @@
+﻿flutter_native_splash:
+  color: "#1E40AF"
+  image: assets/image/enzo4ex/splash.jpg
+  color_dark: "#1E40AF"
+  image_dark: assets/image/enzo4ex/splash.jpg
+  android_12:
+    image: assets/image/enzo4ex/splash.jpg
+    color: "#1E40AF"
+  web: false
+  android: true
+  ios: true

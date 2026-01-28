@@ -1,0 +1,35 @@
+flutter_native_splash:
+  android: true
+  ios: true
+  web: false
+
+  # Global fallback (if no flavor matched)
+  color: "#FFFFFF"
+  image: assets/exness.png
+
+  android_12:
+    image: assets/exness.png
+    icon_background_color: "#FFFFFF"
+
+  # Flavor specific configs
+  flavors:
+    nestpip:
+      color: "#2196F3"
+      image: assets/nestpip/splash.png
+      android_12:
+        image: assets/nestpip/splash.png
+        icon_background_color: "#2196F3"
+
+    capmarket:
+      color: "#000000"
+      image: assets/capmarket/splash.png
+      android_12:
+        image: assets/capmarket/splash.png
+        icon_background_color: "#000000"
+
+    ellitefx:
+      color: "#FF5722"
+      image: assets/ellitefx/splash.png
+      android_12:
+        image: assets/ellitefx/splash.png
+        icon_background_color: "#FF5722"

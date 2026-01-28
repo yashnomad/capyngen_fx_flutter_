@@ -1,0 +1,11 @@
+﻿flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/image/fynixfxweb/splash.jpg
+  color_dark: "#FFFFFF"
+  image_dark: assets/image/fynixfxweb/splash.jpg
+  android_12:
+    image: assets/image/fynixfxweb/splash.jpg
+    color: "#FFFFFF"
+  web: false
+  android: true
+  ios: true

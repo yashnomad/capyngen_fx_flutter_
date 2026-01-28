@@ -1,0 +1,295 @@
+
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+
+
+android {
+    namespace = "com.example.exness_clone"
+
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion "27.0.12077973"
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        applicationId = "com.example.exness_clone"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+//    buildTypes {
+//        release {
+//            signingConfig = signingConfigs.debug
+//        }
+//    }
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+
+
+    flavorDimensions "app"
+    productFlavors {
+        capmarket {
+            dimension "app"
+            applicationId "com.capyngen.capmarket"
+            versionNameSuffix "-capmarket"
+            resValue "string", "app_name", "CapMarket"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"capmarket"'
+        }
+        ellitefx {
+            dimension "app"
+            applicationId "com.ellitefx.trader"
+            versionNameSuffix "-ellitefx"
+            resValue "string", "app_name", "ElliteFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"ellitefx"'
+        }
+        nestpip {
+            dimension "app"
+            applicationId "com.nestpip.trading"
+            versionNameSuffix "-nestpip"
+            resValue "string", "app_name", "NestPip"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"nestpip"'
+        }
+        pipzomarket {
+            dimension "app"
+            applicationId "com.pipzomarket.trading"
+            versionNameSuffix "-pipzomarket"
+            resValue "string", "app_name", "Pipzomarket"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"pipzomarket"'
+        }
+        righttrade {
+            dimension "app"
+            applicationId "com.righttradecapital"
+            versionNameSuffix "-righttrade"
+            resValue "string", "app_name", "Right Trade Capital"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"righttrade"'
+        }
+        primeforex {
+            dimension "app"
+            applicationId "com.primeforexmarket"
+            versionNameSuffix "-primeforex"
+            resValue "string", "app_name", "Prime Forex Market"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"primeforex"'
+        }
+
+        innovixcapital {
+            dimension "app"
+            applicationId "com.innovixcapital.trading"
+            versionNameSuffix "-innovixcapital"
+            resValue "string", "app_name", "Innovix Capital"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"innovixcapital"'
+        }
+        forexmt {
+            dimension "app"
+            applicationId "com.forexmt.trading"
+            versionNameSuffix "-forexmt"
+            resValue "string", "app_name", "ForexMT"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"forexmt"'
+        }
+        ivrfx {
+            dimension "app"
+            applicationId "com.ivrfx.trading"
+            versionNameSuffix "-ivrfx"
+            resValue "string", "app_name", "IVRFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"ivrfx"'
+        }
+        enzo4ex {
+            dimension "app"
+            applicationId "com.enzo4ex.trading"
+            versionCode 6
+            versionName "1.6.0"
+            versionNameSuffix "-enzo4ex"
+            resValue "string", "app_name", "Enzo4Ex"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"enzo4ex"'
+        }
+        fynixfxweb {
+            dimension "app"
+            applicationId "com.fynixfxweb.trading"
+            versionNameSuffix "-fynixfxweb"
+            resValue "string", "app_name", "FynixFXWeb"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"fynixfxweb"'
+
+        }
+        finflymarket {
+            dimension "app"
+            applicationId "com.finflymarket.trading"
+            versionNameSuffix "-finflymarket"
+            resValue "string", "app_name", "Finfly Market"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"finflymarket"'
+        }
+        worldonecapital {
+            dimension "app"
+            applicationId "com.worldonecapital.trading"
+            versionNameSuffix "-worldonecapital"
+            resValue "string", "app_name", "World One Capital"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"worldonecapital"'
+        }
+        sarthifxm {
+            dimension "app"
+            applicationId "com.sarthifxm.trading"
+            versionNameSuffix "-sarthifxm"
+            resValue "string", "app_name", "SarthiFXM"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"sarthifxm"'
+
+        }
+        capyngen {
+            dimension "app"
+            applicationId "com.capyngen.trading"
+            versionNameSuffix "-capyngen"
+            resValue "string", "app_name", "Capyngen"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"capyngen"'
+        }
+        ganecapitalfx {
+            dimension "app"
+            applicationId "com.ganecapitalfx.trading"
+            versionNameSuffix "-ganecapitalfx"
+            resValue "string", "app_name", "GaneCapitalFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"ganecapitalfx"'
+        }
+        voltfxtrade {
+            dimension "app"
+            applicationId "com.voltfxtrade.trading"
+            versionNameSuffix "-voltfxtrade"
+            resValue "string", "app_name", "VoltFXTrade"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"voltfxtrade"'
+        }
+        zyrotrade {
+            dimension "app"
+            applicationId "com.zyrotrade.trading"
+            versionNameSuffix "-zyrotrade"
+            resValue "string", "app_name", "ZyroTrade"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"zyrotrade"'
+        }
+        tgrxm {
+            dimension "app"
+            applicationId "com.tgrxm.trading"
+            versionNameSuffix "-tgrxm"
+            resValue "string", "app_name", "TGRXM"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"tgrxm"'
+        }
+        valtradex {
+            dimension "app"
+            applicationId "com.valtradex.trading"
+            versionNameSuffix "-valtradex"
+            resValue "string", "app_name", "Valtradex"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"valtradex"'
+        }
+        livefxm {
+            dimension "app"
+            applicationId "com.livefxm.trading"
+            versionNameSuffix "-livefxm"
+            resValue "string", "app_name", "LiveFXM"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"livefxm"'
+        }
+        iglobefx {
+            dimension "app"
+            applicationId "com.iglobefx.trading"
+            versionNameSuffix "-iglobefx"
+            resValue "string", "app_name", "Staar Market"
+//            resValue "string", "app_name", "IGlobeFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"iglobefx"'
+        }
+        ryvotrade {
+            dimension "app"
+            applicationId "com.ryvotrade.trading"
+            versionNameSuffix "-ryvotrade"
+            resValue "string", "app_name", "RyvoTrade"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"ryvotrade"'
+        }
+    kitefx {
+            dimension "app"
+            applicationId "com.kitefx.trading"
+            versionNameSuffix "-kitefx"
+            resValue "string", "app_name", "KiteFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"kitefx"'
+        }
+     bluegatemarket {
+            dimension "app"
+            applicationId "com.bluegatemarket.trading"
+            versionNameSuffix "-bluegatemarket"
+            resValue "string", "app_name", "BlueGateMarket"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"bluegatemarket"'
+        }
+        nmatrixpro {
+            dimension "app"
+            applicationId "com.nmatrixpro.trading"
+            versionNameSuffix "-nmatrixpro"
+            resValue "string", "app_name", "NMatrixPro"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"nmatrixpro"'
+        }
+        fourxtradz {
+            dimension "app"
+            applicationId "com.fourxtradz.trading"
+            versionNameSuffix "-fourxtradz"
+            resValue "string", "app_name", "4xTradZ"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"fourxtradz"'
+        }
+
+    }
+
+    flutter {
+        source = "../.."
+    }
+}
