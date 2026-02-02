@@ -11,8 +11,47 @@ class TradeCubit extends Cubit<TradeState> {
   TradeCubit() : super(const TradeState());
 
   bool _socketStarted = false;
+  String? _currentAccount;
+  void _handleEquity(EquitySnapshot equity) {
+    // ✅ Always create a NEW equity reference
+    final newEquity = EquitySnapshot(
+      balance: equity.balance,
+      equity: equity.equity,
+      freeMargin: equity.freeMargin,
+      pnl: equity.pnl,
+      usedMargin: equity.usedMargin,
+      userAssets: equity.userAssets,
+      liveProfit: List<LiveProfit>.from(equity.liveProfit),
+    );
+
+    final updatedActiveTrades = _mapActiveTradesWithPnL(
+      state.activeTrades,
+      newEquity.liveProfit,
+    );
+
+    emit(
+      state.copyWith(
+        equity: newEquity,
+        activeTrades: updatedActiveTrades,
+      ),
+    );
+  }
 
   void startSocket({required String jwt, required String userId}) {
+    if (_currentAccount == userId && _socketStarted) return;
+
+    stopSocket();
+    _currentAccount = userId;
+    _socketStarted = true;
+
+    PlaceOrderWS().connect(
+      jwt: jwt,
+      userId: userId,
+      onEquity: _handleEquity,
+    );
+  }
+
+  void startSockets({required String jwt, required String userId}) {
     if (_socketStarted) return;
     _socketStarted = true;
 
@@ -20,15 +59,17 @@ class TradeCubit extends Cubit<TradeState> {
       jwt: jwt,
       userId: userId,
       onEquity: (equity) {
-        emit(state.copyWith(equity: equity));
-        _updateActiveTradesPnL(equity.liveProfit);
-      },
-      onTradeUpdate: (data) => _handleWsTradeUpdate(data, isNew: false),
-      onNewTrade: (data) => _handleWsTradeUpdate(data, isNew: true),
-      onError: (msg) {
-        if (msg.contains('handshakeFailed') || msg.contains('invalid Token')) {
-          _socketStarted = false;
-        }
+        final updatedActiveTrades = _mapActiveTradesWithPnL(
+          state.activeTrades,
+          equity.liveProfit,
+        );
+
+        emit(
+          state.copyWith(
+            equity: equity,
+            activeTrades: updatedActiveTrades,
+          ),
+        );
       },
     );
   }
@@ -87,6 +128,26 @@ class TradeCubit extends Cubit<TradeState> {
   //   }
   // }
 
+  List<TradeModel> _mapActiveTradesWithPnL(
+    List<TradeModel> activeTrades,
+    List<LiveProfit> liveProfits,
+  ) {
+    if (activeTrades.isEmpty) return List.from(activeTrades);
+
+    final updated = List<TradeModel>.from(activeTrades);
+
+    for (final lp in liveProfits) {
+      final index = updated.indexWhere((t) => t.id == lp.id);
+      if (index != -1) {
+        updated[index] = updated[index].copyWith(
+          currentProfit: lp.profit,
+        );
+      }
+    }
+
+    return updated;
+  }
+
   void _updateActiveTradesPnL(List<LiveProfit> liveProfits) {
     // Agar active trades khali hain, toh profit update karne ki zaroorat nahi
     if (state.activeTrades.isEmpty) return;
@@ -123,12 +184,14 @@ class TradeCubit extends Cubit<TradeState> {
 
       if (results[0].success && results[0].data?['results'] != null) {
         active = (results[0].data!['results'] as List)
-            .map((e) => TradeModel.fromJson(e)).toList();
+            .map((e) => TradeModel.fromJson(e))
+            .toList();
       }
 
       if (results[1].success && results[1].data?['results'] != null) {
         pending = (results[1].data!['results'] as List)
-            .map((e) => TradeModel.fromJson(e)).toList();
+            .map((e) => TradeModel.fromJson(e))
+            .toList();
       }
 
       emit(state.copyWith(activeTrades: active, pendingTrades: pending));
@@ -165,7 +228,8 @@ class TradeCubit extends Cubit<TradeState> {
 
           if (status == 'pending') {
             final updatedPending = [newTrade, ...state.pendingTrades];
-            emit(state.copyWith(pendingTrades: updatedPending, isLoading: false));
+            emit(state.copyWith(
+                pendingTrades: updatedPending, isLoading: false));
           } else {
             final updatedActive = [newTrade, ...state.activeTrades];
             emit(state.copyWith(activeTrades: updatedActive, isLoading: false));
@@ -174,10 +238,12 @@ class TradeCubit extends Cubit<TradeState> {
           await fetchOpenTrades(payload.tradeAccountId);
         }
 
-        emit(state.copyWith(successMessage: res.message ?? "Trade Placed", isLoading: false));
+        emit(state.copyWith(
+            successMessage: res.message ?? "Trade Placed", isLoading: false));
         startSocket(jwt: jwt, userId: payload.tradeAccountId);
       } else {
-        emit(state.copyWith(isLoading: false, errorMessage: res.message ?? "Failed"));
+        emit(state.copyWith(
+            isLoading: false, errorMessage: res.message ?? "Failed"));
       }
     } catch (e) {
       emit(state.copyWith(isLoading: false, errorMessage: e.toString()));

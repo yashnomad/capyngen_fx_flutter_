@@ -45,7 +45,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
 
   bool get isLengthValid =>
       _passwordController.text.length >= 8 &&
-          _passwordController.text.length <= 15;
+      _passwordController.text.length <= 15;
 
   bool get hasUpperLower =>
       RegExp(r'(?=.*[a-z])(?=.*[A-Z])').hasMatch(_passwordController.text);
@@ -92,7 +92,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.5),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.elasticOut));
+    ).animate(
+        CurvedAnimation(parent: _slideController, curve: Curves.elasticOut));
 
     _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _buttonController, curve: Curves.easeInOut),
@@ -132,7 +133,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     int? maxLength,
     int delay = 0,
   }) {
-
     return SlideTransition(
       position: _slideAnimation,
       child: FadeTransition(
@@ -177,13 +177,13 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                         end: Alignment.bottomRight,
                         colors: isFocused
                             ? [
-                          context.appBarGradientColor,
-                          context.appBarGradientColorSecond,
-                        ]
+                                context.appBarGradientColor,
+                                context.appBarGradientColorSecond,
+                              ]
                             : [
-                          context.profileScaffoldColor,
-                          context.appBarGradientColor,
-                        ],
+                                context.profileScaffoldColor,
+                                context.appBarGradientColor,
+                              ],
                       ),
                     ),
                     child: TextFormField(
@@ -208,7 +208,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                         ),
                         filled: true,
                         fillColor: Colors.transparent,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 20),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -229,11 +230,13 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                         ),
                         suffixIcon: suffixIcon != null
                             ? Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          child: suffixIcon,
-                        )
+                                margin: const EdgeInsets.only(right: 12),
+                                child: suffixIcon,
+                              )
                             : null,
-                        counterText: maxLength != null ? '${controller.text.length}/$maxLength' : null,
+                        counterText: maxLength != null
+                            ? '${controller.text.length}/$maxLength'
+                            : null,
                         counterStyle: TextStyle(
                           fontSize: 12,
                           color: context.registerFocusSecondColor,
@@ -278,7 +281,9 @@ class _RegistrationScreenState extends State<RegistrationScreen>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Icon(
-                  isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                  isMet
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
                   key: ValueKey(isMet),
                   color: isMet ? Colors.green.shade600 : Colors.grey.shade400,
                   size: 16,
@@ -306,7 +311,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
 
   // Premium Submit Button
   Widget _buildPremiumButton({required bool isLoading}) {
-
     return SlideTransition(
       position: _slideAnimation,
       child: FadeTransition(
@@ -319,15 +323,16 @@ class _RegistrationScreenState extends State<RegistrationScreen>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               gradient: isLoading
-                  ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade500])
+                  ? LinearGradient(
+                      colors: [Colors.grey.shade400, Colors.grey.shade500])
                   : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppFlavorColor.primary,
-                  AppFlavorColor.darkPrimary,
-                ],
-              ),
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppFlavorColor.primary,
+                        AppFlavorColor.darkPrimary,
+                      ],
+                    ),
               boxShadow: [
                 BoxShadow(
                   color: isLoading
@@ -342,32 +347,35 @@ class _RegistrationScreenState extends State<RegistrationScreen>
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: isLoading ? null : () {
-                  _buttonController.forward().then((_) {
-                    _buttonController.reverse();
-                    _onSubmit();
-                  });
-                },
+                onTap: isLoading
+                    ? null
+                    : () {
+                        _buttonController.forward().then((_) {
+                          _buttonController.reverse();
+                          _onSubmit();
+                        });
+                      },
                 child: Container(
                   alignment: Alignment.center,
                   child: isLoading
                       ? SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : Text(
-                    'Create Account',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Colors.white,
-                      letterSpacing: 1,
-                    ),
-                  ),
+                          'Create Account',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: Colors.white,
+                            letterSpacing: 1,
+                          ),
+                        ),
                 ),
               ),
             ),

@@ -95,71 +95,69 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                     builder: (_) => ReactiveDataService(
                       builder: (context, liveData, calculations) {
                         return OrderConfirmationWidget(
-                          symbol: widget.symbol,
-                          orderType: _selectedExecution ?? "Market",
-                          direction: selectedSide,
-                          volume: lotCtrl.text,
-                          takeProfit:
-                              _tpCtrl.text.isEmpty ? null : _tpCtrl.text,
-                          stopLoss: _slCtrl.text.isEmpty ? null : _slCtrl.text,
-                          onConfirm: () {
-                            final cubit = context.read<TradeCubit>();
-                            final jwt = StorageService.getToken();
-                            final userId = StorageService.getUser();
+                            symbol: widget.symbol,
+                            orderType: _selectedExecution ?? "Market",
+                            direction: selectedSide,
+                            volume: lotCtrl.text,
+                            takeProfit:
+                                _tpCtrl.text.isEmpty ? null : _tpCtrl.text,
+                            stopLoss:
+                                _slCtrl.text.isEmpty ? null : _slCtrl.text,
+                            onConfirm: () {
+                              final cubit = context.read<TradeCubit>();
+                              final jwt = StorageService.getToken();
+                              final userId = StorageService.getUser();
 
-                            final tradeAccountId =
-                                account.id ?? userId?.id ?? '';
+                              final tradeAccountId =
+                                  account.id ?? userId?.id ?? '';
 
-                            final lotValue =
-                                double.tryParse(lotCtrl.text.trim()) ?? 0.1;
+                              final double lotValue =
+                                  double.tryParse(lotCtrl.text.trim()) ?? 0.1;
 
-                            final String executionType =
-                                _selectedExecution?.toLowerCase() ?? 'market';
-                            final double? limitPrice =
-                                double.tryParse(_limitPriceCtrl.text);
-                            final double? tpValue =
-                                double.tryParse(_tpCtrl.text);
-                            final double? slValue =
-                                double.tryParse(_slCtrl.text);
-                            double avgPrice;
-                            if (executionType == 'limit' &&
-                                limitPrice != null) {
-                              avgPrice = limitPrice;
-                            } else {
-                              avgPrice = selectedSide == "Buy"
-                                  ? calculations.askValue
-                                  : calculations.bidValue;
-                            }
+                              final String executionType =
+                                  (_selectedExecution ?? "Market")
+                                      .toLowerCase();
 
-                            final payload = TradePayload(
-                              tradeAccountId: tradeAccountId,
-                              symbol: widget.id,
-                              lot: lotValue,
-                              bs: selectedSide,
-                              executionType: executionType,
-                              avg: (executionType == 'limit' &&
-                                      limitPrice != null)
-                                  ? limitPrice
-                                  : (selectedSide == 'Buy'
-                                      ? calculations.askValue
-                                      : calculations.bidValue),
-                              target: tpValue,
-                              sl: slValue,
-                            );
+                              final double? limitPrice =
+                                  double.tryParse(_limitPriceCtrl.text);
 
-                            debugPrint(
-                                '📤 Trade Payload → ${payload.toJson()}');
+                              final double? tpValue =
+                                  double.tryParse(_tpCtrl.text);
 
-                            if (jwt != null) {
-                              cubit.createTrade(
-                                payload: payload,
-                                jwt: jwt,
+                              final double? slValue =
+                                  double.tryParse(_slCtrl.text);
+
+                              // ✅ FINAL RULE
+                              // Market → avg = null
+                              // Limit → avg = limitPrice
+                              final double? avgPrice =
+                                  executionType == 'limit' ? limitPrice : null;
+
+                              final payload = TradePayload(
+                                tradeAccountId: tradeAccountId,
+                                symbol: widget.id,
+                                lot: lotValue,
+                                bs: selectedSide,
+                                executionType: executionType,
+                                avg: avgPrice, // market → null, limit → price
+                                sl: slValue,
+                                target: tpValue,
                               );
-                            }
 
-                            Navigator.pop(context);
-                          },
-                        );
+                              // debugPrint(
+                              //     '📤 Trade Payload → ${payload.toJson()}');
+
+                              if (jwt != null) {
+                                debugPrint(
+                                    '📤 Trade Payload → ${payload.toJson()}');
+                                cubit.createTrade(
+                                  payload: payload,
+                                  jwt: jwt,
+                                );
+                              }
+
+                              Navigator.pop(context);
+                            });
                       },
                       symbolName: widget.symbol,
                     ),

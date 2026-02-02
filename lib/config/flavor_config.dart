@@ -26,6 +26,8 @@ enum Flavor {
   bluegatemarket,
   nmatrixpro,
   fourxtradz,
+  // ---- Addding via Yash
+  fxcelite,
 }
 
 class FlavorConfig {
@@ -89,6 +91,8 @@ class FlavorConfig {
         return 'NMatrixPro';
       case Flavor.fourxtradz:
         return '4xTradZ';
+      case Flavor.fxcelite:
+        return 'FxceElite';
 
       default:
         return '';
@@ -155,6 +159,8 @@ class FlavorConfig {
         return 'com.nmatrixpro.trading';
       case Flavor.fourxtradz:
         return 'com.4xtradz.trading';
+      case Flavor.fxcelite:
+        return 'com.fxcelite.trading';
 
       default:
         return "com.example.exness_clone";
@@ -355,6 +361,13 @@ class FlavorConfig {
           'logoPath': 'assets/image/fourxtradz/logo.png',
           'splashPath': 'assets/image/fourxtradz/splash.png',
         };
+      case Flavor.fxcelite:
+        return {
+          'primaryColor': 0xFFFFFFF,
+          'accentColor': 0xFFFFFFF,
+          'logoPath': 'assets/image/fxcelite/logo.png',
+          'splashPath': 'assets/image/fxcelite/splash.png',
+        };
 
       default:
         return {};
@@ -388,4 +401,5 @@ class FlavorConfig {
   static bool get isBlueGateMarket => appFlavor == Flavor.bluegatemarket;
   static bool get isNMatrixPro => appFlavor == Flavor.nmatrixpro;
   static bool get isFourxTradz => appFlavor == Flavor.fourxtradz;
+  static bool get isFxceLite => appFlavor == Flavor.fxcelite;
 }

@@ -2,6 +2,7 @@ import 'package:exness_clone/theme/blue_gate_market_colors.dart';
 import 'package:exness_clone/theme/capyngen_colors.dart';
 import 'package:exness_clone/theme/finfly_market_colors.dart';
 import 'package:exness_clone/theme/fourxtradz_colors.dart';
+import 'package:exness_clone/theme/fxcelite_colors.dart';
 import 'package:exness_clone/theme/ganecapitalx_colors.dart';
 import 'package:exness_clone/theme/kitefx_colors.dart';
 import 'package:exness_clone/theme/pipzo_colors.dart';
@@ -57,6 +58,7 @@ class AppFlavorColor {
     required Color bluegatemarket,
     required Color nmatrixpro,
     required Color fourxtradz,
+    required Color fxcelite,
   }) {
     switch (FlavorConfig.appFlavor) {
       case Flavor.capmarket:
@@ -113,6 +115,8 @@ class AppFlavorColor {
         return nmatrixpro;
       case Flavor.fourxtradz:
         return fourxtradz;
+      case Flavor.fxcelite:
+        return fxcelite;
       default:
         return capmarket;
     }
@@ -146,6 +150,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.bg,
         nmatrixpro: NMatrixProColors.bg,
         fourxtradz: FourXTradzColors.bg,
+        fxcelite: FxceliteColors.bg,
       );
 
   static Color get cardBackground => _getColor(
@@ -176,6 +181,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.cardBg,
         nmatrixpro: NMatrixProColors.cardBg,
         fourxtradz: FourXTradzColors.cardBg,
+        fxcelite: FxceliteColors.cardBg,
       );
 
   static Color get primary => _getColor(
@@ -206,6 +212,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.primary,
         nmatrixpro: NMatrixProColors.primary,
         fourxtradz: FourXTradzColors.primary,
+        fxcelite: FxceliteColors.primary,
       );
   static Color get secondary => _getColor(
         capmarket: CapMarketColors.secondary,
@@ -235,6 +242,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.secondary,
         nmatrixpro: NMatrixProColors.secondary,
         fourxtradz: FourXTradzColors.secondary,
+        fxcelite: FxceliteColors.secondary,
       );
 
   static Color get darkPrimary => _getColor(
@@ -265,6 +273,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.primaryDark,
         nmatrixpro: NMatrixProColors.primaryDark,
         fourxtradz: FourXTradzColors.primaryDark,
+        fxcelite: FxceliteColors.primaryDark,
       );
 
   static Color get theme => primary;
@@ -297,6 +306,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.button,
         nmatrixpro: NMatrixProColors.button,
         fourxtradz: FourXTradzColors.button,
+        fxcelite: FxceliteColors.button,
       );
 
   static Color get buttonText => _getColor(
@@ -327,6 +337,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.buttonText,
         nmatrixpro: NMatrixProColors.buttonText,
         fourxtradz: FourXTradzColors.buttonText,
+        fxcelite: FxceliteColors.buttonText,
       );
 
   static Color get text => _getColor(
@@ -357,6 +368,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.text,
         nmatrixpro: NMatrixProColors.text,
         fourxtradz: FourXTradzColors.text,
+        fxcelite: FxceliteColors.text,
       );
 
   static Color get headerText => _getColor(
@@ -387,6 +399,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.headerText,
         nmatrixpro: NMatrixProColors.headerText,
         fourxtradz: FourXTradzColors.headerText,
+        fxcelite: FxceliteColors.headerText,
       );
 
   static Color get icon => _getColor(
@@ -417,6 +430,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.icon,
         nmatrixpro: NMatrixProColors.icon,
         fourxtradz: FourXTradzColors.icon,
+        fxcelite: FxceliteColors.icon,
       );
 
   static Color get iconSecondary => _getColor(
@@ -447,6 +461,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.iconSecondary,
         nmatrixpro: NMatrixProColors.iconSecondary,
         fourxtradz: FourXTradzColors.iconSecondary,
+        fxcelite: FxceliteColors.iconSecondary,
       );
 
   static Color get shadowColor => _getColor(
@@ -477,6 +492,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.shadow,
         nmatrixpro: NMatrixProColors.shadow,
         fourxtradz: FourXTradzColors.shadow,
+        fxcelite: FxceliteColors.shadow,
       );
 
   static Color get success => _getColor(
@@ -507,6 +523,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.success,
         nmatrixpro: NMatrixProColors.success,
         fourxtradz: FourXTradzColors.success,
+        fxcelite: FxceliteColors.success,
       );
 
   static Color get error => _getColor(
@@ -537,6 +554,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.error,
         nmatrixpro: NMatrixProColors.error,
         fourxtradz: FourXTradzColors.error,
+        fxcelite: FxceliteColors.error,
       );
 
   static Color get warning => _getColor(
@@ -567,6 +585,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.warning,
         nmatrixpro: NMatrixProColors.warning,
         fourxtradz: FourXTradzColors.warning,
+        fxcelite: FxceliteColors.warning,
       );
 
   static Color get info => _getColor(
@@ -597,6 +616,7 @@ class AppFlavorColor {
         bluegatemarket: BlueGateMarketColors.info,
         nmatrixpro: NMatrixProColors.info,
         fourxtradz: FourXTradzColors.info,
+        fxcelite: FxceliteColors.info,
       );
 
   static List<Color> get buttonGradient {
@@ -736,6 +756,11 @@ class AppFlavorColor {
         return [
           FourXTradzColors.primary,
           FourXTradzColors.primaryDark.withOpacity(0.5),
+        ];
+      case Flavor.fxcelite:
+        return [
+          FxceliteColors.primary,
+          FxceliteColors.primaryDark.withOpacity(0.5),
         ];
 
       default:

@@ -57,6 +57,8 @@ class FlavorAssets {
         return 'assets/image/nmatrixpro/splash.png';
       case Flavor.fourxtradz:
         return 'assets/image/fourxtradz/splash.png';
+      case Flavor.fxcelite:
+        return 'assets/image/fxcelite/splash.png';
 
       default:
         return 'assets/image/default/logo.png';
@@ -68,7 +70,7 @@ class FlavorAssets {
       case Flavor.capmarket:
         return 'CapMarket';
       case Flavor.ellitefx:
-        return 'ElliteFX';
+        return 'EliteFX';
       case Flavor.nestpip:
         return 'NestPip';
       case Flavor.pipzomarket:
@@ -120,6 +122,8 @@ class FlavorAssets {
         return 'NMatrixPro';
       case Flavor.fourxtradz:
         return '4xTradZ';
+      case Flavor.fxcelite:
+        return 'FxceElite';
 
       default:
         return 'Default App';
@@ -183,6 +187,8 @@ class FlavorAssets {
         return 'nmatrixPro';
       case Flavor.fourxtradz:
         return '4xTradZ';
+      case Flavor.fxcelite:
+        return 'FxceElite';
       default:
         return 'defaultApp';
     }

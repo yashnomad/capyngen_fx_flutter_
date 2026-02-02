@@ -1,0 +1,11 @@
+flutter_native_splash:
+  color: "#147086"
+  image: assets/image/fxcelite/splash.png
+  color_dark: "#D4D4D4"
+  image_dark: assets/image/fxcelite/splash.png
+  android_12:
+    image: assets/image/fxcelite/splash.png
+    color: "#147086"
+  web: false
+  android: true
+  ios: true

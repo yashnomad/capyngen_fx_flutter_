@@ -286,6 +286,14 @@ android {
             buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
             buildConfigField "String", "FLAVOR", '"fourxtradz"'
         }
+        fxcelite {
+            dimension "app"
+            applicationId "com.fxcelite.trading"
+            versionNameSuffix "-fxcelite"
+            resValue "string", "app_name", "FxceElite"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"fxcelite"'
+        }
 
     }
 

@@ -32,6 +32,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('🔥 APP FLAVOR = ${FlavorConfig.appFlavor}');
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
@@ -74,8 +75,7 @@ class MyApp extends StatelessWidget {
           create: (context) => TradeCubit(),
         ),
         BlocProvider(create: (context) => NetworkCubit()),
-    BlocProvider(
-    create: (_) => SymbolCubit()..getAllSymbols()),
+        BlocProvider(create: (_) => SymbolCubit()..getAllSymbols()),
       ],
       child: MaterialApp.router(
         scaffoldMessengerKey: SnackBarService.messengerKey,

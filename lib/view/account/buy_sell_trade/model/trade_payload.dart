@@ -1,19 +1,19 @@
 class TradePayload {
   final String tradeAccountId;
-  final String symbol; // This seems to be the Symbol ID based on your curl
+  final String symbol;
   final double lot;
-  final String bs; // "Buy" or "Sell"
-  final double avg;
-  final String executionType; // "market" or "limit"
+  final String bs; // Buy / Sell
+  final double? avg; // ✅ nullable
+  final String executionType; // market / limit
   final double? sl;
-  final double? target; // Changed from 'tp' to 'target' based on curl
+  final double? target;
 
   TradePayload({
     required this.tradeAccountId,
     required this.symbol,
     required this.lot,
     required this.bs,
-    required this.avg,
+    this.avg, // ✅ not required
     required this.executionType,
     this.sl,
     this.target,
@@ -25,11 +25,17 @@ class TradePayload {
       "symbol": symbol,
       "lot": lot,
       "bs": bs,
-      "avg": avg,
       "executionType": executionType,
     };
+
+    // 🔥 avg ONLY for LIMIT
+    if (executionType == "limit" && avg != null) {
+      data["avg"] = avg;
+    }
+
     if (sl != null) data["sl"] = sl;
     if (target != null) data["target"] = target;
+
     return data;
   }
 }
