@@ -161,6 +161,18 @@ class _AccountSymbolSectionState extends State<AccountSymbolSection>
   }
 
   Widget _buildFavoritesTab(String tradeUserId) {
+    double clampPrice(double value) {
+      if (value == 0) return 0;
+
+      // max 5 decimals
+      double rounded = double.parse(value.toStringAsFixed(5));
+
+      // ensure min 2 decimals by normalizing again
+      return double.parse(rounded.toStringAsFixed(
+        rounded.truncateToDouble() == rounded ? 2 : 5,
+      ));
+    }
+
     return BlocListener<SymbolCubit, SymbolState>(
       // listenWhen: (prev, curr) => prev.watchlist != curr.watchlist,
       // listenWhen: (_, curr) => curr.watchlist.isNotEmpty,
@@ -226,8 +238,8 @@ class _AccountSymbolSectionState extends State<AccountSymbolSection>
                   child: Selector<DataFeedProvider, LiveProfit?>(
                     selector: (_, p) => p.liveData[symbolName],
                     builder: (_, live, __) {
-                      final bid = live?.bid ?? 0.0;
-                      final ask = live?.ask ?? 0.0;
+                      final bid = clampPrice(live?.bid ?? 0.0);
+                      final ask = clampPrice(live?.ask ?? 0.0);
 
                       return InkWell(
                         onTap: () {

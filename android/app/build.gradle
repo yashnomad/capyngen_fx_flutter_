@@ -288,7 +288,7 @@ android {
         }
         fxcelite {
             dimension "app"
-            applicationId "com.fxcelite.trading"
+            applicationId "com.fxcelite.trading" //Package name
             versionNameSuffix "-fxcelite"
             resValue "string", "app_name", "FxceElite"
             buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'

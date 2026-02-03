@@ -31,10 +31,10 @@ class DataFeedWS {
     );
 
     _socket!.onConnect((_) {
-      debugPrint('✅ [Socket] Connected');
+      // debugPrint('✅ [Socket] Connected');
 
       if (tradeUserId.isNotEmpty) {
-        debugPrint('📤 [Socket] Subscribing user: $tradeUserId');
+        // debugPrint('📤 [Socket] Subscribing user: $tradeUserId');
         _socket!.emit('subscribe', tradeUserId);
         _socket!.emit('equity:value', tradeUserId);
       }
@@ -44,15 +44,15 @@ class DataFeedWS {
 
     _socket!.on('live-data', (data) {
       try {
-        debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        debugPrint('📩 WS live-data');
-        debugPrint('🧠 RuntimeType: ${data.runtimeType}');
+        // debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // debugPrint('📩 WS live-data');
+        // debugPrint('🧠 RuntimeType: ${data.runtimeType}');
 
         Uint8List? bytes;
 
         // ✅ 1. Already-decoded payloads (JSON / Map)
         if (data is Map || data is String) {
-          debugPrint('📝 Already decoded payload: $data');
+          // debugPrint('📝 Already decoded payload: $data');
           _processDecodedData(data, onLiveData);
           return;
         }
@@ -65,42 +65,42 @@ class DataFeedWS {
         } else if (data is List<int>) {
           bytes = Uint8List.fromList(data);
         } else {
-          debugPrint('⚠️ Unknown payload type ignored');
+          // debugPrint('⚠️ Unknown payload type ignored');
           return;
         }
 
         if (bytes.isEmpty) {
-          debugPrint('⚠️ Empty binary payload');
+          // debugPrint('⚠️ Empty binary payload');
           return;
         }
 
-        debugPrint('📦 First 20 bytes: ${bytes.take(20).toList()}');
+        // debugPrint('📦 First 20 bytes: ${bytes.take(20).toList()}');
 
         // 🔑 Decode MessagePack safely
         dynamic decoded;
         try {
           decoded = mp.deserialize(bytes);
-          debugPrint('✅ MessagePack decoded');
+          // debugPrint('✅ MessagePack decoded');
         } catch (e) {
-          debugPrint('❌ MessagePack decode failed: $e');
+          // debugPrint('❌ MessagePack decode failed: $e');
           return;
         }
 
-        debugPrint('📥 Decoded payload: $decoded');
+        // debugPrint('📥 Decoded payload: $decoded');
         _processDecodedData(decoded, onLiveData);
       } catch (e, stackTrace) {
-        debugPrint('❌ [Socket Error]: $e');
-        debugPrint(stackTrace.toString());
+        // debugPrint('❌ [Socket Error]: $e');
+        // debugPrint(stackTrace.toString());
         onError?.call(e.toString());
       }
     });
 
     _socket!.onDisconnect((_) {
-      debugPrint('🔌 [Socket] Disconnected');
+      // debugPrint('🔌 [Socket] Disconnected');
     });
 
     _socket!.onError((err) {
-      debugPrint('❌ [Socket Error]: $err');
+      // debugPrint('❌ [Socket Error]: $err');
       onError?.call(err.toString());
     });
   }
@@ -155,7 +155,7 @@ class DataFeedWS {
     }
 
     if (profits.isNotEmpty) {
-      // debugPrint('✅ Emitting ${profits.length} updates');
+      // // debugPrint('✅ Emitting ${profits.length} updates');
       callback(profits);
     }
   }
@@ -171,7 +171,7 @@ class DataFeedWS {
 
   void subscribeSymbol(String symbolName) {
     if (_socket != null && _socket!.connected) {
-      debugPrint('📤 [Socket] Subscribing symbol: $symbolName');
+      // debugPrint('📤 [Socket] Subscribing symbol: $symbolName');
       _socket!.emit('live-data', symbolName);
     }
   }
@@ -181,7 +181,7 @@ class DataFeedWS {
   // ─────────────────────────────────────────────
   void disconnect() {
     _socket?.disconnect();
-    debugPrint('🔌 [Socket] Manually disconnected');
+    // debugPrint('🔌 [Socket] Manually disconnected');
   }
 }
 
@@ -244,9 +244,9 @@ class DataFeedWS {
     );
 
     _socket!.onConnect((_) {
-      debugPrint('✅ [Socket] Connected!');
+      // debugPrint('✅ [Socket] Connected!');
       if (tradeUserId.isNotEmpty) {
-        debugPrint('📤 [Socket] Emitting subscribe: "$tradeUserId"');
+        // debugPrint('📤 [Socket] Emitting subscribe: "$tradeUserId"');
         _socket!.emit("subscribe", tradeUserId);
         _socket!.emit("equity:value", tradeUserId);
       }
@@ -274,12 +274,12 @@ class DataFeedWS {
         }
 
         if (bytes == null || bytes.isEmpty) {
-          debugPrint('⚠️ [Socket] Received empty data');
+          // debugPrint('⚠️ [Socket] Received empty data');
           return;
         }
 
         // Log first few bytes for debugging
-        debugPrint(
+        // debugPrint(
             '📦 [Raw bytes]: ${bytes.sublist(0, bytes.length > 20 ? 20 : bytes.length)}');
 
         // Try to decode - attempt multiple methods
@@ -289,34 +289,34 @@ class DataFeedWS {
         try {
           final jsonString = utf8.decode(bytes);
           decodedData = jsonDecode(jsonString);
-          debugPrint('✅ [Decoded as JSON]');
+          // debugPrint('✅ [Decoded as JSON]');
         } catch (e) {
           // Method 2: Try MessagePack
-          debugPrint('ℹ️ [Not JSON, trying MessagePack]');
+          // debugPrint('ℹ️ [Not JSON, trying MessagePack]');
           try {
             decodedData = _decodeMessagePack(bytes);
-            debugPrint('✅ [Decoded as MessagePack]');
+            // debugPrint('✅ [Decoded as MessagePack]');
           } catch (e2) {
-            debugPrint('❌ [MessagePack failed]: $e2');
+            // debugPrint('❌ [MessagePack failed]: $e2');
             onError?.call('Failed to decode: $e2');
             return;
           }
         }
 
         if (decodedData != null) {
-          debugPrint('📥 [Decoded data]: $decodedData');
+          // debugPrint('📥 [Decoded data]: $decodedData');
           _processDecodedData(decodedData, onLiveData);
         }
       } catch (e, stackTrace) {
-        debugPrint('❌ [Socket Error]: $e');
-        debugPrint('Stack: $stackTrace');
+        // debugPrint('❌ [Socket Error]: $e');
+        // debugPrint('Stack: $stackTrace');
         onError?.call(e.toString());
       }
     });
 
-    _socket!.onDisconnect((_) => debugPrint('🔌 [Socket] Disconnected'));
+    _socket!.onDisconnect((_) => // debugPrint('🔌 [Socket] Disconnected'));
     _socket!.onError((data) {
-      debugPrint('❌ [Socket Error]: $data');
+      // debugPrint('❌ [Socket Error]: $data');
       onError?.call(data.toString());
     });
   }
@@ -452,7 +452,7 @@ class DataFeedWS {
       // Boolean true (0xC3)
       if (byte == 0xC3) return true;
 
-      debugPrint('⚠️ [Unknown MessagePack type]: 0x${byte.toRadixString(16)}');
+      // debugPrint('⚠️ [Unknown MessagePack type]: 0x${byte.toRadixString(16)}');
       return null;
     }
 
@@ -469,10 +469,10 @@ class DataFeedWS {
       final bid = _parseDouble(data['bid'] ?? data['b']);
 
       if (symbol.isNotEmpty && (ask > 0 || bid > 0)) {
-        debugPrint('✅ [Parsed] Symbol: $symbol, Ask: $ask, Bid: $bid');
+        // debugPrint('✅ [Parsed] Symbol: $symbol, Ask: $ask, Bid: $bid');
         callback([LiveProfit(symbol: symbol, ask: ask, bid: bid)]);
       } else {
-        debugPrint('⚠️ [Invalid Data] Symbol: $symbol, Ask: $ask, Bid: $bid');
+        // debugPrint('⚠️ [Invalid Data] Symbol: $symbol, Ask: $ask, Bid: $bid');
       }
     } else if (data is List) {
       // Handle array of maps OR nested array structure
@@ -522,14 +522,14 @@ class DataFeedWS {
 
   void subscribeSymbol(String symbolName) {
     if (_socket != null && _socket!.connected) {
-      debugPrint('📤 [Socket] Subscribing to: $symbolName');
+      // debugPrint('📤 [Socket] Subscribing to: $symbolName');
       _socket!.emit("live-data", symbolName);
     }
   }
 
   void disconnect() {
     _socket?.disconnect();
-    debugPrint('🔌 [Socket] Manually disconnected');
+    // debugPrint('🔌 [Socket] Manually disconnected');
   }
 }
 

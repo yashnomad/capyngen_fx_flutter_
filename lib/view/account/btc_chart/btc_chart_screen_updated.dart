@@ -1,113 +1,86 @@
-  import 'package:exness_clone/core/extensions.dart';
-  import 'package:exness_clone/provider/datafeed_provider.dart';
-  import 'package:exness_clone/services/balance_masked.dart';
-  import 'package:exness_clone/services/switch_account_service.dart';
-  import 'package:exness_clone/services/trading_view_service.dart';
-  import 'package:exness_clone/theme/app_flavor_color.dart';
-  import 'package:exness_clone/utils/bottom_sheets.dart';
-  import 'package:exness_clone/utils/snack_bar.dart';
-  import 'package:exness_clone/view/trade/model/trade_account.dart';
-  import 'package:exness_clone/widget/account_bottom_sheet.dart';
-  import 'package:exness_clone/widget/simple_appbar.dart';
-  import 'package:flutter/cupertino.dart';
-  import 'package:flutter/material.dart';
-  import 'package:flutter_bloc/flutter_bloc.dart';
-  import 'package:provider/provider.dart';
-  import '../../../constant/trade_data.dart';
-  import '../../../constant/app_vector.dart';
-  import '../../../services/data_feed_ws.dart';
-  import '../../../services/reactive_data_service.dart';
-  import '../../../theme/app_colors.dart';
-  import '../../../utils/common_utils.dart';
-  import '../../../widget/slidepage_navigate.dart';
-  import '../trade_screen/new_order_screen.dart';
-  import '../btc_setting/btc_setting_screen.dart';
-  import '../buy_sell_trade/widget/trade_bottom_sheets.dart';
-  import '../calculator_screen.dart';
-  import '../detail_screen.dart';
-  import '../price_alert_screen.dart';
-  import '../widget/tab_selector.dart';
-  import 'package:webview_flutter/webview_flutter.dart';
+/*
+For first time i made change in this file to fix the decimal issue upto 5 decimal places. 2/2/2026
+ */
 
-  class BTCChartScreenUpdated extends StatefulWidget {
-    final String symbolName;
-    final String id;
-    final String tradeUserId;
+import 'package:exness_clone/core/extensions.dart';
+import 'package:exness_clone/provider/datafeed_provider.dart';
+import 'package:exness_clone/services/balance_masked.dart';
+import 'package:exness_clone/services/switch_account_service.dart';
+import 'package:exness_clone/services/trading_view_service.dart';
+import 'package:exness_clone/theme/app_flavor_color.dart';
+import 'package:exness_clone/utils/bottom_sheets.dart';
+import 'package:exness_clone/utils/snack_bar.dart';
+import 'package:exness_clone/view/trade/model/trade_account.dart';
+import 'package:exness_clone/widget/account_bottom_sheet.dart';
+import 'package:exness_clone/widget/simple_appbar.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import '../../../constant/trade_data.dart';
+import '../../../constant/app_vector.dart';
+import '../../../services/data_feed_ws.dart';
+import '../../../services/reactive_data_service.dart';
+import '../../../theme/app_colors.dart';
+import '../../../utils/common_utils.dart';
+import '../../../widget/slidepage_navigate.dart';
+import '../trade_screen/new_order_screen.dart';
+import '../btc_setting/btc_setting_screen.dart';
+import '../buy_sell_trade/widget/trade_bottom_sheets.dart';
+import '../calculator_screen.dart';
+import '../detail_screen.dart';
+import '../price_alert_screen.dart';
+import '../widget/tab_selector.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-    const BTCChartScreenUpdated({
-      super.key,
-      required this.symbolName,
-      required this.id,
-      required this.tradeUserId,
-    });
+class BTCChartScreenUpdated extends StatefulWidget {
+  final String symbolName;
+  final String id;
+  final String tradeUserId;
 
-    @override
-    State<BTCChartScreenUpdated> createState() => _BTCChartScreenUpdatedState();
-  }
+  const BTCChartScreenUpdated({
+    super.key,
+    required this.symbolName,
+    required this.id,
+    required this.tradeUserId,
+  });
 
-  class _BTCChartScreenUpdatedState extends State<BTCChartScreenUpdated> {
-    // late final WebViewController _controller;
-    WebViewController? _controller;
+  @override
+  State<BTCChartScreenUpdated> createState() => _BTCChartScreenUpdatedState();
+}
 
-    final TradingViewService _chartService = TradingViewService();
+class _BTCChartScreenUpdatedState extends State<BTCChartScreenUpdated> {
+  // late final WebViewController _controller;
+  WebViewController? _controller;
 
-    final notifier = TradingViewService().getPriceNotifier('GBPUSD');
+  final TradingViewService _chartService = TradingViewService();
 
-    // Current interval
-    String _selectedInterval = '1';
-    bool _isChartReady = false;
+  final notifier = TradingViewService().getPriceNotifier('GBPUSD');
 
-    // late String _symbolName;
+  // Current interval
+  String _selectedInterval = '1';
+  bool _isChartReady = false;
 
-    int sellPercentage = 51;
-    int buyPercentage = 49;
+  // late String _symbolName;
 
-    // Interval options
-    final Map<String, String> _intervals = {
-      '1': '1m',
-      '5': '5m',
-      '15': '15m',
-      '30': '30m',
-      '60': '1h',
-      '240': '4h',
-      'D': '1D',
-      'W': '1W',
-    };
+  int sellPercentage = 51;
+  int buyPercentage = 49;
 
-    void _changeInterval(String interval) {
-      setState(() {
-        _selectedInterval = interval;
+  // Interval options
+  final Map<String, String> _intervals = {
+    '1': '1m',
+    '5': '5m',
+    '15': '15m',
+    '30': '30m',
+    '60': '1h',
+    '240': '4h',
+    'D': '1D',
+    'W': '1W',
+  };
 
-        _controller = _chartService.getController(
-          widget.symbolName,
-          interval: _selectedInterval,
-          tradeUserId: widget.tradeUserId,
-          context: context,
-        );
-      });
-    }
-
-
-    // @override
-    // void initState() {
-    //   super.initState();
-    //   debugPrint("--- Chart Widget initState ---");
-    //
-    //   // _controller = _chartService.getController(
-    //   //   widget.symbolName,
-    //   //   interval: _selectedInterval,
-    //   // );
-    //   _controller = _chartService.getController(
-    //     widget.symbolName,
-    //     interval: _selectedInterval,
-    //     tradeUserId: widget.tradeUserId,
-    //     context: context,
-    //   );
-    // }
-
-    @override
-    void initState() {
-      super.initState();
+  void _changeInterval(String interval) {
+    setState(() {
+      _selectedInterval = interval;
 
       _controller = _chartService.getController(
         widget.symbolName,
@@ -115,190 +88,252 @@
         tradeUserId: widget.tradeUserId,
         context: context,
       );
-    }
-
-
-    @override
-    void dispose() {
-      debugPrint("--- Chart Widget disposed for ${widget.symbolName} ---");
-      super.dispose();
-    }
-
-    @override
-    Widget build(BuildContext context) {
-      return Scaffold(
-        backgroundColor: context.scaffoldBackgroundColor,
-        appBar: SimpleAppbar(title: 'Live Chart'),
-        bottomNavigationBar: buildPadding(context),
-        // body: SafeArea(
-        //   child: Selector<DataFeedProvider, LiveProfit?>(
-        //     selector: (_, provider) {
-        //       var data = provider.liveData[widget.symbolName];
-        //
-        //       data ??= provider.liveData[widget.symbolName.toUpperCase()];
-        //
-        //       data ??= provider.liveData[widget.symbolName.toLowerCase()];
-        //
-        //       return data;
-        //     },
-        //     builder: (context, liveProfit, _) {
-        //       if (liveProfit != null) {
-        //         _chartService.updateLiveData(
-        //           symbol: widget.symbolName,
-        //           bid: liveProfit.bid,
-        //           ask: liveProfit.ask,
-        //           timestamp: liveProfit.timestamp,
-        //         );
-        //       }
-        //
-        //       return RepaintBoundary(
-        //         child: WebViewWidget(
-        //           controller: _controller,
-        //         ),
-        //       );
-        //     },
-        //   ),
-        // ),
-        body: SafeArea(
-          child: Selector<DataFeedProvider, LiveProfit?>(
-            selector: (_, provider) {
-              var data = provider.liveData[widget.symbolName];
-              data ??= provider.liveData[widget.symbolName.toUpperCase()];
-              data ??= provider.liveData[widget.symbolName.toLowerCase()];
-              return data;
-            },
-            shouldRebuild: (prev, next) => prev?.timestamp != next?.timestamp,
-            builder: (context, liveProfit, _) {
-              if (liveProfit != null) {
-                _chartService.updateLiveData(
-                  symbol: widget.symbolName,
-                  bid: liveProfit.bid,
-                  ask: liveProfit.ask,
-                  timestamp: liveProfit.timestamp,
-                );
-              }
-
-              return RepaintBoundary(
-                child: WebViewWidget(
-                  controller: _controller!,
-                ),
-              );
-            },
-          ),
-        ),
-
-      );
-    }
-
-    Padding buildPadding(BuildContext context) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Row(
-                  spacing: 10,
-                  children: [
-                    Expanded(
-                      child: ReactiveDataService(
-                          symbolName: widget.symbolName,
-                          builder: (context, liveData, calculations) {
-                            return CupertinoButton(
-                              color: AppColor.redColor,
-                              padding: EdgeInsets.symmetric(vertical: 10),
-                              onPressed: () => _goToOrder(
-                                context: context,
-                                price: calculations.askValue,
-                                side: 'Sell',
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('Sell',
-                                      style: TextStyle(
-                                          color: AppColor.whiteColor,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500)),
-                                  Text(
-                                    calculations.askValue.toString(),
-                                    style: TextStyle(
-                                        color: AppColor.whiteColor,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                    ),
-                    Expanded(
-                      child: ReactiveDataService(
-                        builder: (context, liveData, calculations) {
-                          return CupertinoButton(
-                            color: AppColor.blueColor,
-                            padding: EdgeInsets.symmetric(vertical: 10),
-                            onPressed: () => _goToOrder(
-                              context: context,
-                              price: calculations.bidValue,
-                              side: 'Buy',
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Buy',
-                                    style: TextStyle(
-                                        color: AppColor.whiteColor,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500)),
-                                Text(
-                                  calculations.bidValue.toString(),
-                                  style: TextStyle(
-                                      color: AppColor.whiteColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        symbolName: widget.symbolName,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    void _goToOrder({
-      required BuildContext context,
-      required double? price,
-      required String side,
-    }) {
-      if (price == null || price == 0) {
-        SnackBarService.showInfo('Price not available');
-        return;
-      }
-
-      Navigator.push(
-        context,
-        SlidePageRoute(
-          page: NewOrderScreen(
-            side: side,
-            symbol: widget.symbolName,
-            id: widget.id,
-            sector: TradeData.stockCategory,
-          ),
-        ),
-      );
-    }
+    });
   }
+
+  String _formatPrice(double? value,
+      {int minDecimals = 2, int maxDecimals = 5}) {
+    if (value == null) return '--';
+
+    // Start with maxDecimals, then trim trailing zeros but keep at least minDecimals
+    String s = value.toStringAsFixed(maxDecimals); // e.g. "4751.440"
+    int dotIndex = s.indexOf('.');
+    if (dotIndex == -1) return s; // no decimal point
+
+    int end = s.length;
+    // Trim trailing zeros but keep at least minDecimals decimals
+    while (end > dotIndex + 1 &&
+        end - (dotIndex + 1) > minDecimals &&
+        s[end - 1] == '0') {
+      end--;
+    }
+
+    // If last char is '.', remove it
+    if (s[end - 1] == '.') {
+      end--;
+    }
+
+    return s.substring(0, end);
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   debugPrint("--- Chart Widget initState ---");
+  //
+  //   // _controller = _chartService.getController(
+  //   //   widget.symbolName,
+  //   //   interval: _selectedInterval,
+  //   // );
+  //   _controller = _chartService.getController(
+  //     widget.symbolName,
+  //     interval: _selectedInterval,
+  //     tradeUserId: widget.tradeUserId,
+  //     context: context,
+  //   );
+  // }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = _chartService.getController(
+      widget.symbolName,
+      interval: _selectedInterval,
+      tradeUserId: widget.tradeUserId,
+      context: context,
+    );
+  }
+
+  @override
+  void dispose() {
+    debugPrint("--- Chart Widget disposed for ${widget.symbolName} ---");
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.scaffoldBackgroundColor,
+      appBar: SimpleAppbar(title: 'Live Chart'),
+      bottomNavigationBar: buildPadding(context),
+      // body: SafeArea(
+      //   child: Selector<DataFeedProvider, LiveProfit?>(
+      //     selector: (_, provider) {
+      //       var data = provider.liveData[widget.symbolName];
+      //
+      //       data ??= provider.liveData[widget.symbolName.toUpperCase()];
+      //
+      //       data ??= provider.liveData[widget.symbolName.toLowerCase()];
+      //
+      //       return data;
+      //     },
+      //     builder: (context, liveProfit, _) {
+      //       if (liveProfit != null) {
+      //         _chartService.updateLiveData(
+      //           symbol: widget.symbolName,
+      //           bid: liveProfit.bid,
+      //           ask: liveProfit.ask,
+      //           timestamp: liveProfit.timestamp,
+      //         );
+      //       }
+      //
+      //       return RepaintBoundary(
+      //         child: WebViewWidget(
+      //           controller: _controller,
+      //         ),
+      //       );
+      //     },
+      //   ),
+      // ),
+      body: SafeArea(
+        child: Selector<DataFeedProvider, LiveProfit?>(
+          selector: (_, provider) {
+            var data = provider.liveData[widget.symbolName];
+            data ??= provider.liveData[widget.symbolName.toUpperCase()];
+            data ??= provider.liveData[widget.symbolName.toLowerCase()];
+            return data;
+          },
+          shouldRebuild: (prev, next) => prev?.timestamp != next?.timestamp,
+          builder: (context, liveProfit, _) {
+            if (liveProfit != null) {
+              _chartService.updateLiveData(
+                symbol: widget.symbolName,
+                bid: liveProfit.bid,
+                ask: liveProfit.ask,
+                timestamp: liveProfit.timestamp,
+              );
+            }
+
+            return RepaintBoundary(
+              child: WebViewWidget(
+                controller: _controller!,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Padding buildPadding(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Row(
+                spacing: 10,
+                children: [
+                  Expanded(
+                    child: ReactiveDataService(
+                      symbolName: widget.symbolName,
+                      builder: (context, liveData, calculations) {
+                        return CupertinoButton(
+                          color: AppColor.redColor,
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          onPressed: () => _goToOrder(
+                            context: context,
+                            price: calculations.askValue,
+                            side: 'Sell',
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Sell',
+                                style: TextStyle(
+                                  color: AppColor.whiteColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                _formatPrice(calculations.askValue),
+                                style: TextStyle(
+                                  color: AppColor.whiteColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: ReactiveDataService(
+                      symbolName: widget.symbolName,
+                      builder: (context, liveData, calculations) {
+                        return CupertinoButton(
+                          color: AppColor.blueColor,
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          onPressed: () => _goToOrder(
+                            context: context,
+                            price: calculations.bidValue,
+                            side: 'Buy',
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Buy',
+                                style: TextStyle(
+                                  color: AppColor.whiteColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                _formatPrice(calculations.bidValue),
+                                style: TextStyle(
+                                  color: AppColor.whiteColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _goToOrder({
+    required BuildContext context,
+    required double? price,
+    required String side,
+  }) {
+    if (price == null || price == 0) {
+      SnackBarService.showInfo('Price not available');
+      return;
+    }
+
+    Navigator.push(
+      context,
+      SlidePageRoute(
+        page: NewOrderScreen(
+          side: side,
+          symbol: widget.symbolName,
+          id: widget.id,
+          sector: TradeData.stockCategory,
+        ),
+      ),
+    );
+  }
+}
 
 /*
 import 'package:exness_clone/core/extensions.dart';

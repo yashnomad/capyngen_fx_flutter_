@@ -130,13 +130,13 @@ class DataFeedProvider extends ChangeNotifier {
       final int timeframe = interval == 'D'
           ? 1440
           : interval == 'W'
-          ? 10080
-          : int.tryParse(interval) ?? 60;
+              ? 10080
+              : int.tryParse(interval) ?? 60;
 
       // --- debug log (KEEP) ---
       debugPrint(
         '📊 [HIST] symbol=$symbol interval=$interval timeframe=$timeframe '
-            'from=${fromSeconds * 1000} to=${toSeconds * 1000}',
+        'from=${fromSeconds * 1000} to=${toSeconds * 1000}',
       );
 
       // --- REST API CALL (NO CHANGE) ---
@@ -163,7 +163,6 @@ class DataFeedProvider extends ChangeNotifier {
             'close': (item['close'] as num).toDouble(),
             'volume': (item['volume'] as num?)?.toDouble() ?? 0.0,
           };
-
         }).toList();
       }
     } catch (e, st) {
@@ -173,7 +172,6 @@ class DataFeedProvider extends ChangeNotifier {
 
     return [];
   }
-
 
   @override
   void dispose() {

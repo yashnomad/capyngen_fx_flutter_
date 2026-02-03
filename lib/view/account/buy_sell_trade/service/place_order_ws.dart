@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:exness_clone/view/account/buy_sell_trade/model/ws_equity_data.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class PlaceOrderWS {
@@ -20,33 +20,31 @@ class PlaceOrderWS {
     void Function(List<LiveProfit>)? onLiveData,
     void Function(String)? onError,
   }) {
-    if (isConnected) {
-      debugPrint('Socket already connected');
-      return;
+    if (_socket != null) {
+      _socket!.off('equity:value');
+      _socket!.off('trade:update');
+      _socket!.off('trade:new');
+      _socket!.off('error');
     }
 
-    debugPrint('Connecting to WebSocket...');
+    if (_socket == null || !_socket!.connected) {
+      _socket = io.io(
+        'https://api.capyngen.us',
+        io.OptionBuilder()
+            .setTransports(['websocket'])
+            .enableAutoConnect()
+            .setAuth({'token': jwt})
+            .build(),
+      );
 
-    _socket = io.io(
-      'https://api.capyngen.us',
-      io.OptionBuilder()
-          .setTransports(['websocket'])
-          .enableAutoConnect()
-          .setAuth({'token': jwt})
-          .build(),
-    );
-
-    _socket!.onConnect((_) {
-      debugPrint('Socket connected successfully');
-      _socket!.emit('subscribe', userId);
-      debugPrint('Subscribed user: $userId');
-
-      _socket!.emit('equity:value');
-      debugPrint('Started equity streaming');
-    });
+      _socket!.onConnect((_) {
+        _subscribeToEvents(userId);
+      });
+    } else {
+      _subscribeToEvents(userId);
+    }
 
     _socket!.on('equity:value', (data) {
-      _prettyPrint(data, prefix: "📊 equity:value → ");
       try {
         if (data is Map<String, dynamic>) {
           final equity = EquitySnapshot.fromJson(data);
@@ -54,7 +52,7 @@ class PlaceOrderWS {
           onLiveData?.call(equity.liveProfit);
         }
       } catch (e) {
-        debugPrint('Error parsing equity:value: $e');
+        debugPrint('Parse Error: $e');
       }
     });
 
@@ -73,30 +71,27 @@ class PlaceOrderWS {
       } else if (data is String) {
         errorMsg = data;
       }
-
-      debugPrint('Socket error: $errorMsg');
       onError?.call(errorMsg);
 
       if (errorMsg.contains('handshakeFailed') ||
           errorMsg.contains('invalid Token')) {
-        debugPrint('Authentication failed - disconnecting');
         _socket?.disconnect();
       }
     });
 
-    _socket!.onConnectError((data) {
-      debugPrint('Connection error: $data');
-      onError?.call('Connection failed: $data');
-    });
-
     _socket!.onDisconnect((reason) {
-      debugPrint('Socket disconnected: $reason');
+      debugPrint('Socket Disconnected: $reason');
     });
+  }
+
+  void _subscribeToEvents(String userId) {
+    if (_socket == null) return;
+    _socket!.emit('subscribe', userId);
+    _socket!.emit('equity:value');
   }
 
   void disconnect() {
     if (_socket != null) {
-      debugPrint('Disconnecting socket...');
       _socket!.disconnect();
     }
   }
@@ -105,15 +100,5 @@ class PlaceOrderWS {
     disconnect();
     _socket?.dispose();
     _socket = null;
-  }
-}
-
-void _prettyPrint(dynamic data, {String prefix = ""}) {
-  try {
-    final encoder = const JsonEncoder.withIndent("  ");
-    final pretty = encoder.convert(data);
-    debugPrint("$prefix$pretty");
-  } catch (_) {
-    debugPrint("$prefix$data");
   }
 }

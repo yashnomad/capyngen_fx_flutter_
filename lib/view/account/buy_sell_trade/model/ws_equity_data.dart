@@ -172,7 +172,7 @@ class LiveProfit {
   final double profit;
   final String? symbol;
   final double? price; // Live Current Price
-  final double? avg;   // Entry Price
+  final double? avg; // Entry Price
   final double? lot;
   final String? bs;
 

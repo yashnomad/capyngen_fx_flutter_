@@ -616,31 +616,30 @@ class _NewBTCChartScreenState extends State<NewBTCChartScreen> {
                       // Real-time chart
                       Expanded(
                         child: Container(
-                          margin: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color:
-                            context.backgroundColor,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: _candleData.isEmpty
-                              ? const Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 16),
-                                      Text('Loading real-time chart data...'),
-                                    ],
-                                  ),
-                                )
-                              // : RealtimeChartWidget(
-                              //     candleData: _candleData,
-                              //     chartType: _selectedChartType,
-                              //     primaryColor: AppColor.blueColor,
-                              //   ),
-                          : SizedBox()
-                        ),
+                            margin: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: context.backgroundColor,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: _candleData.isEmpty
+                                ? const Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        CircularProgressIndicator(),
+                                        SizedBox(height: 16),
+                                        Text('Loading real-time chart data...'),
+                                      ],
+                                    ),
+                                  )
+                                // : RealtimeChartWidget(
+                                //     candleData: _candleData,
+                                //     chartType: _selectedChartType,
+                                //     primaryColor: AppColor.blueColor,
+                                //   ),
+                                : SizedBox()),
                       ),
                     ],
                   ),

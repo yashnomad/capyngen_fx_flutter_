@@ -1,4 +1,3 @@
-
 // symbol_cubit.dart
 import 'package:exness_clone/cubit/symbol/symbol_state.dart';
 import 'package:exness_clone/utils/snack_bar.dart';
@@ -140,5 +139,4 @@ class SymbolCubit extends Cubit<SymbolState> {
       SnackBarService.showError("Connection error: Item restored");
     }
   }
-
 }

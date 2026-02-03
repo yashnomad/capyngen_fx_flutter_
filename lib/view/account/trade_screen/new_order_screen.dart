@@ -374,6 +374,25 @@ class _BuySellTabsState extends State<_BuySellTabs> {
     }
   }
 
+  String formatPriceMin2Max5(double value) {
+    if (value == 0) return "0.00";
+
+    // round to max 5
+    final fixed = value.toStringAsFixed(5);
+    final parts = fixed.split('.');
+
+    if (parts.length == 1) return parts[0];
+
+    var decimals = parts[1].replaceAll(RegExp(r'0+$'), '');
+
+    // ensure min 2
+    if (decimals.length < 2) {
+      decimals = decimals.padRight(2, '0');
+    }
+
+    return '${parts[0]}.$decimals';
+  }
+
   @override
   void dispose() {
     selectedSide.dispose();
@@ -402,7 +421,7 @@ class _BuySellTabsState extends State<_BuySellTabs> {
                       ),
                       child: Center(
                         child: Text(
-                          "Sell\n${calculations.askValue}",
+                          "Sell\n${formatPriceMin2Max5(calculations.askValue)}",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
@@ -435,7 +454,7 @@ class _BuySellTabsState extends State<_BuySellTabs> {
                       ),
                       child: Center(
                         child: Text(
-                          "Buy\n${calculations.bidValue}",
+                          "Buy\n${formatPriceMin2Max5(calculations.bidValue)}",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
