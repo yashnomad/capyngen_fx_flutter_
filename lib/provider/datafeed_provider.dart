@@ -25,7 +25,7 @@ class DataFeedProvider extends ChangeNotifier {
         tradeUserId: tradeUserId,
         onConnected: () {
           _isConnected = true;
-          debugPrint("🔄 Socket connected for user: $tradeUserId");
+          debugPrint("🔄 Socket connected for user: $tradeUserId $jwt");
 
           resubscribeAll();
         },
@@ -177,5 +177,13 @@ class DataFeedProvider extends ChangeNotifier {
   void dispose() {
     _socket.disconnect();
     super.dispose();
+  }
+
+  void reset() {
+    _socket.disconnect();
+    _isConnected = false;
+    _liveData.clear();
+    _subscribedSymbols.clear();
+    notifyListeners();
   }
 }

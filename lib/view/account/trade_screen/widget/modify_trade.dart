@@ -117,7 +117,9 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
                 Text(
                   widget.avgPrice.toStringAsFixed(5),
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 16),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.black),
                 ),
               ],
             ),

@@ -59,7 +59,12 @@ class FlavorAssets {
         return 'assets/image/fourxtradz/splash.png';
       case Flavor.fxcelite:
         return 'assets/image/fxcelite/splash.png';
-
+      case Flavor.vintageprimefx:
+        return 'assets/image/vintageprimefx/splash.png';
+      case Flavor.aoneprimefx:
+        return 'assets/image/aoneprimefx/splash.png';
+      case Flavor.aurelianglobal:
+        return 'assets/image/aurelianglobal/splash.png';
       default:
         return 'assets/image/default/logo.png';
     }
@@ -123,8 +128,13 @@ class FlavorAssets {
       case Flavor.fourxtradz:
         return '4xTradZ';
       case Flavor.fxcelite:
-        return 'FxceElite';
-
+        return 'Fxcelite';
+      case Flavor.vintageprimefx:
+        return 'VintagePrimeFX';
+      case Flavor.aoneprimefx:
+        return 'aoneprimefx';
+      case Flavor.aurelianglobal:
+        return 'Aurelian Global';
       default:
         return 'Default App';
     }
@@ -188,7 +198,13 @@ class FlavorAssets {
       case Flavor.fourxtradz:
         return '4xTradZ';
       case Flavor.fxcelite:
-        return 'FxceElite';
+        return 'Fxcelite';
+      case Flavor.vintageprimefx:
+        return 'vintageprimefx';
+      case Flavor.aoneprimefx:
+        return 'aoneprimefx';
+      case Flavor.aurelianglobal:
+        return 'aurelianGlobal';
       default:
         return 'defaultApp';
     }

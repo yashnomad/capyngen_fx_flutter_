@@ -125,6 +125,15 @@ class _TradeScreenState extends State<TradeScreen>
                     ],
                   ),
                 ),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () {
+                    if (activeAccount.id != null) {
+                      context.read<TradeCubit>().hardRefresh(activeAccount.id!);
+                    }
+                  },
+                  backgroundColor: AppColor.themeColor,
+                  child: const Icon(Icons.refresh, color: Colors.white),
+                ),
                 body: RefreshIndicator(
                   onRefresh: () async {
                     if (activeAccount.id != null) {

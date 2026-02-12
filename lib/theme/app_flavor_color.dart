@@ -17,6 +17,7 @@ import 'package:exness_clone/theme/ryvo_trade_colors.dart';
 import 'package:exness_clone/theme/sarthifxm_color.dart';
 import 'package:exness_clone/theme/tgrxm_colors.dart';
 import 'package:exness_clone/theme/valtradex_colors.dart';
+import 'package:exness_clone/theme/vintageprimefx_colors.dart';
 import 'package:exness_clone/theme/voltfxtrade_colors.dart';
 import 'package:exness_clone/theme/world_one_capital_colors.dart';
 import 'package:exness_clone/theme/zyrotrade_colors.dart';
@@ -59,6 +60,9 @@ class AppFlavorColor {
     required Color nmatrixpro,
     required Color fourxtradz,
     required Color fxcelite,
+    required Color vintageprimefx,
+    required Color aoneprimefx,
+    required Color aurelianglobal,
   }) {
     switch (FlavorConfig.appFlavor) {
       case Flavor.capmarket:
@@ -117,6 +121,12 @@ class AppFlavorColor {
         return fourxtradz;
       case Flavor.fxcelite:
         return fxcelite;
+      case Flavor.vintageprimefx:
+        return vintageprimefx;
+      case Flavor.aoneprimefx:
+        return aoneprimefx;
+      case Flavor.aurelianglobal:
+        return aurelianglobal;
       default:
         return capmarket;
     }
@@ -151,6 +161,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.bg,
         fourxtradz: FourXTradzColors.bg,
         fxcelite: FxceliteColors.bg,
+        vintageprimefx: VintagePrimeFxColors.bg,
+        aoneprimefx: VintagePrimeFxColors.bg,
+        aurelianglobal: VintagePrimeFxColors.bg,
       );
 
   static Color get cardBackground => _getColor(
@@ -182,6 +195,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.cardBg,
         fourxtradz: FourXTradzColors.cardBg,
         fxcelite: FxceliteColors.cardBg,
+        vintageprimefx: VintagePrimeFxColors.cardBg,
+        aoneprimefx: VintagePrimeFxColors.cardBg,
+        aurelianglobal: VintagePrimeFxColors.cardBg,
       );
 
   static Color get primary => _getColor(
@@ -213,6 +229,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.primary,
         fourxtradz: FourXTradzColors.primary,
         fxcelite: FxceliteColors.primary,
+        vintageprimefx: VintagePrimeFxColors.primary,
+        aoneprimefx: VintagePrimeFxColors.primary,
+        aurelianglobal: VintagePrimeFxColors.primary,
       );
   static Color get secondary => _getColor(
         capmarket: CapMarketColors.secondary,
@@ -243,6 +262,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.secondary,
         fourxtradz: FourXTradzColors.secondary,
         fxcelite: FxceliteColors.secondary,
+        vintageprimefx: VintagePrimeFxColors.secondary,
+        aoneprimefx: VintagePrimeFxColors.secondary,
+        aurelianglobal: VintagePrimeFxColors.secondary,
       );
 
   static Color get darkPrimary => _getColor(
@@ -274,6 +296,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.primaryDark,
         fourxtradz: FourXTradzColors.primaryDark,
         fxcelite: FxceliteColors.primaryDark,
+        vintageprimefx: VintagePrimeFxColors.primaryDark,
+        aoneprimefx: VintagePrimeFxColors.primaryDark,
+        aurelianglobal: VintagePrimeFxColors.primaryDark,
       );
 
   static Color get theme => primary;
@@ -307,6 +332,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.button,
         fourxtradz: FourXTradzColors.button,
         fxcelite: FxceliteColors.button,
+        vintageprimefx: VintagePrimeFxColors.button,
+        aoneprimefx: VintagePrimeFxColors.button,
+        aurelianglobal: VintagePrimeFxColors.button,
       );
 
   static Color get buttonText => _getColor(
@@ -338,6 +366,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.buttonText,
         fourxtradz: FourXTradzColors.buttonText,
         fxcelite: FxceliteColors.buttonText,
+        vintageprimefx: VintagePrimeFxColors.buttonText,
+        aoneprimefx: VintagePrimeFxColors.buttonText,
+        aurelianglobal: VintagePrimeFxColors.buttonText,
       );
 
   static Color get text => _getColor(
@@ -369,6 +400,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.text,
         fourxtradz: FourXTradzColors.text,
         fxcelite: FxceliteColors.text,
+        vintageprimefx: VintagePrimeFxColors.text,
+        aoneprimefx: VintagePrimeFxColors.text,
+        aurelianglobal: VintagePrimeFxColors.text,
       );
 
   static Color get headerText => _getColor(
@@ -400,6 +434,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.headerText,
         fourxtradz: FourXTradzColors.headerText,
         fxcelite: FxceliteColors.headerText,
+        vintageprimefx: VintagePrimeFxColors.headerText,
+        aoneprimefx: VintagePrimeFxColors.headerText,
+        aurelianglobal: VintagePrimeFxColors.headerText,
       );
 
   static Color get icon => _getColor(
@@ -431,6 +468,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.icon,
         fourxtradz: FourXTradzColors.icon,
         fxcelite: FxceliteColors.icon,
+        vintageprimefx: VintagePrimeFxColors.icon,
+        aoneprimefx: VintagePrimeFxColors.icon,
+        aurelianglobal: VintagePrimeFxColors.icon,
       );
 
   static Color get iconSecondary => _getColor(
@@ -462,6 +502,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.iconSecondary,
         fourxtradz: FourXTradzColors.iconSecondary,
         fxcelite: FxceliteColors.iconSecondary,
+        vintageprimefx: VintagePrimeFxColors.iconSecondary,
+        aoneprimefx: VintagePrimeFxColors.iconSecondary,
+        aurelianglobal: VintagePrimeFxColors.iconSecondary,
       );
 
   static Color get shadowColor => _getColor(
@@ -493,6 +536,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.shadow,
         fourxtradz: FourXTradzColors.shadow,
         fxcelite: FxceliteColors.shadow,
+        vintageprimefx: VintagePrimeFxColors.shadow,
+        aoneprimefx: VintagePrimeFxColors.shadow,
+        aurelianglobal: VintagePrimeFxColors.shadow,
       );
 
   static Color get success => _getColor(
@@ -524,6 +570,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.success,
         fourxtradz: FourXTradzColors.success,
         fxcelite: FxceliteColors.success,
+        vintageprimefx: VintagePrimeFxColors.success,
+        aoneprimefx: VintagePrimeFxColors.success,
+        aurelianglobal: VintagePrimeFxColors.success,
       );
 
   static Color get error => _getColor(
@@ -555,6 +604,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.error,
         fourxtradz: FourXTradzColors.error,
         fxcelite: FxceliteColors.error,
+        vintageprimefx: VintagePrimeFxColors.error,
+        aoneprimefx: VintagePrimeFxColors.error,
+        aurelianglobal: VintagePrimeFxColors.error,
       );
 
   static Color get warning => _getColor(
@@ -586,6 +638,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.warning,
         fourxtradz: FourXTradzColors.warning,
         fxcelite: FxceliteColors.warning,
+        vintageprimefx: VintagePrimeFxColors.warning,
+        aoneprimefx: VintagePrimeFxColors.warning,
+        aurelianglobal: VintagePrimeFxColors.warning,
       );
 
   static Color get info => _getColor(
@@ -617,6 +672,9 @@ class AppFlavorColor {
         nmatrixpro: NMatrixProColors.info,
         fourxtradz: FourXTradzColors.info,
         fxcelite: FxceliteColors.info,
+        vintageprimefx: VintagePrimeFxColors.info,
+        aoneprimefx: VintagePrimeFxColors.info,
+        aurelianglobal: VintagePrimeFxColors.info,
       );
 
   static List<Color> get buttonGradient {
@@ -761,6 +819,21 @@ class AppFlavorColor {
         return [
           FxceliteColors.primary,
           FxceliteColors.primaryDark.withOpacity(0.5),
+        ];
+      case Flavor.vintageprimefx:
+        return [
+          VintagePrimeFxColors.primary,
+          VintagePrimeFxColors.primaryDark.withOpacity(0.5),
+        ];
+      case Flavor.aoneprimefx:
+        return [
+          VintagePrimeFxColors.primary,
+          VintagePrimeFxColors.primaryDark.withOpacity(0.5),
+        ];
+      case Flavor.aurelianglobal:
+        return [
+          VintagePrimeFxColors.primary,
+          VintagePrimeFxColors.primaryDark.withOpacity(0.5),
         ];
 
       default:

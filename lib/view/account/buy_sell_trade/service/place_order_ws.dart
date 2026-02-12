@@ -6,10 +6,13 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 class PlaceOrderWS {
   PlaceOrderWS._();
   static final PlaceOrderWS _instance = PlaceOrderWS._();
+  static PlaceOrderWS get instance => _instance;
   factory PlaceOrderWS() => _instance;
 
   io.Socket? _socket;
   bool get isConnected => _socket?.connected ?? false;
+
+  String? _currentUserId; // Add this to store userId
 
   void connect({
     required String jwt,
@@ -20,6 +23,8 @@ class PlaceOrderWS {
     void Function(List<LiveProfit>)? onLiveData,
     void Function(String)? onError,
   }) {
+    _currentUserId = userId; // Store userId
+
     if (_socket != null) {
       _socket!.off('equity:value');
       _socket!.off('trade:update');
@@ -87,7 +92,14 @@ class PlaceOrderWS {
   void _subscribeToEvents(String userId) {
     if (_socket == null) return;
     _socket!.emit('subscribe', userId);
-    _socket!.emit('equity:value');
+    _socket!.emit('equity:value', userId);
+  }
+
+  void reSubscribe() {
+    if (_currentUserId != null && _socket != null && _socket!.connected) {
+      debugPrint('Re-subscribing... $_currentUserId');
+      _subscribeToEvents(_currentUserId!);
+    }
   }
 
   void disconnect() {
@@ -100,5 +112,6 @@ class PlaceOrderWS {
     disconnect();
     _socket?.dispose();
     _socket = null;
+    _currentUserId = null;
   }
 }

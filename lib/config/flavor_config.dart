@@ -28,6 +28,9 @@ enum Flavor {
   fourxtradz,
   // ---- Addding via Yash
   fxcelite,
+  vintageprimefx,
+  aoneprimefx,
+  aurelianglobal,
 }
 
 class FlavorConfig {
@@ -92,8 +95,13 @@ class FlavorConfig {
       case Flavor.fourxtradz:
         return '4xTradZ';
       case Flavor.fxcelite:
-        return 'FxceElite';
-
+        return 'Fxcelite';
+      case Flavor.vintageprimefx:
+        return 'VintagePrimeFX';
+      case Flavor.aoneprimefx:
+        return 'aoneprimefx';
+      case Flavor.aurelianglobal:
+        return 'Aurelian Global';
       default:
         return '';
     }
@@ -161,7 +169,12 @@ class FlavorConfig {
         return 'com.4xtradz.trading';
       case Flavor.fxcelite:
         return 'com.fxcelite.trading';
-
+      case Flavor.vintageprimefx:
+        return 'com.vintageprimefx.trading';
+      case Flavor.aoneprimefx:
+        return 'com.aoneprimefx.trading';
+      case Flavor.aurelianglobal:
+        return 'com.aurelianglobal.trading';
       default:
         return "com.example.exness_clone";
     }
@@ -368,6 +381,27 @@ class FlavorConfig {
           'logoPath': 'assets/image/fxcelite/logo.png',
           'splashPath': 'assets/image/fxcelite/splash.png',
         };
+      case Flavor.vintageprimefx:
+        return {
+          'primaryColor': 0xFFFFFFF,
+          'accentColor': 0xFFFFFFF,
+          'logoPath': 'assets/image/vintageprimefx/logo.png',
+          'splashPath': 'assets/image/vintageprimefx/splash.png',
+        };
+      case Flavor.aoneprimefx:
+        return {
+          'primaryColor': 0xFFFFFFF,
+          'accentColor': 0xFFFFFFF,
+          'logoPath': 'assets/image/aoneprimefx/logo.png',
+          'splashPath': 'assets/image/aoneprimefx/splash.png',
+        };
+      case Flavor.aurelianglobal:
+        return {
+          'primaryColor': 0xFFFFFFF,
+          'accentColor': 0xFFFFFFF,
+          'logoPath': 'assets/image/aurelianglobal/logo.png',
+          'splashPath': 'assets/image/aurelianglobal/splash.png',
+        };
 
       default:
         return {};
@@ -402,4 +436,7 @@ class FlavorConfig {
   static bool get isNMatrixPro => appFlavor == Flavor.nmatrixpro;
   static bool get isFourxTradz => appFlavor == Flavor.fourxtradz;
   static bool get isFxceLite => appFlavor == Flavor.fxcelite;
+  static bool get isVintagePrimeFX => appFlavor == Flavor.vintageprimefx;
+  static bool get isaOnePrimeFX => appFlavor == Flavor.aoneprimefx;
+  static bool get isAurelianGlobal => appFlavor == Flavor.aurelianglobal;
 }

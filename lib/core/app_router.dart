@@ -1,5 +1,6 @@
 import 'package:exness_clone/core/go_router_observer.dart';
 import 'package:exness_clone/main_common.dart';
+import 'package:exness_clone/onboardings/ob.dart';
 import 'package:exness_clone/view/account/transaction/internal_transfer/internal_transfer.dart';
 import 'package:exness_clone/view/account/withdraw_deposit/withdraw_funds_screen.dart';
 import 'package:exness_clone/view/app_auth/app_auth_screen.dart';
@@ -44,7 +45,11 @@ final GoRouter appRouter = GoRouter(
       name: 'splash',
       builder: (context, state) => SplashScreen(),
     ),
-
+    GoRoute(
+      path: '/onboard',
+      name: 'onboard',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     GoRoute(
       path: '/error',
       name: 'error',
@@ -148,7 +153,6 @@ final GoRouter appRouter = GoRouter(
         final url = data['url'] as String;
         final cryptoId = data['cryptoId'] as String;
         debugPrint("➡️ Navigating to /cryptoDepositWebview with $url");
-
 
         return CryptoDepositWebView(
           url: url,

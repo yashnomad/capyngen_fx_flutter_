@@ -12,9 +12,9 @@ class StorageService {
   static const _keyToken = 'auth_token';
   static const _keyUser = 'user_model';
   static const _keySymbols = 'cached_symbols';
+  static const _keyIsFirstLaunch = 'is_first_launch';
 
   static const _keyLiveData = 'cached_live_data';
-
 
   // static const _keySelectedAccount = 'selected_account';
 
@@ -103,6 +103,14 @@ class StorageService {
     return _prefs.containsKey(_keyAppPin);
   }
 
+  static bool isFirstLaunch() {
+    // If the key doesn't exist, it is the first launch.
+    return _prefs.getBool(_keyIsFirstLaunch) ?? true;
+  }
+
+  static Future<void> setFirstLaunchCompleted() async {
+    await _prefs.setBool(_keyIsFirstLaunch, false);
+  }
 
 // Save live data when market is active
 //   static Future<void> saveLiveData(List<LiveProfit> data) async {
@@ -134,7 +142,6 @@ class StorageService {
     }
   }
 
-
   static const _keySelectedAccount = 'selected_account';
 
   static Future<void> saveSelectedAccount(Account account) async {
@@ -151,6 +158,4 @@ class StorageService {
   static Future<void> deleteSelectedAccount() async {
     await _prefs.remove(_keySelectedAccount);
   }
-
-
 }

@@ -294,6 +294,30 @@ android {
             buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
             buildConfigField "String", "FLAVOR", '"fxcelite"'
         }
+        vintageprimefx {
+            dimension "app"
+            applicationId "com.vintageprimefx.trading" //Package name
+            versionNameSuffix "-vintageprimefx"
+            resValue "string", "app_name", "VintagePrimeFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"vintageprimefx"'
+        }
+        aoneprimefx {
+            dimension "app"
+            applicationId "com.aoneprimefx.trading" //Package name
+            versionNameSuffix "-aoneprimefx"
+            resValue "string", "app_name", "AonePrimeFX"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"aoneprimefx"'
+        }
+        aurelianglobal {
+            dimension "app"
+            applicationId "com.aurelianglobal.trading" //Package name
+            versionNameSuffix "-aurelianglobal"
+            resValue "string", "app_name", "AurelianGlobal"
+            buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'
+            buildConfigField "String", "FLAVOR", '"aurelianglobal"'
+            }
 
     }
 

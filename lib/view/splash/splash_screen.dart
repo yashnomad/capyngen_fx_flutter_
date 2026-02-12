@@ -37,11 +37,18 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(Duration(seconds: 2));
   }
 
-
   Future<void> _checkToken() async {
     debugPrint('[Splash] Starting _checkToken');
 
     await Future.delayed(const Duration(milliseconds: 500));
+
+    if (StorageService.isFirstLaunch()) {
+      debugPrint('[Splash] First launch detected. Navigating to onboarding.');
+      if (!mounted) return;
+      context.goNamed('onboard');
+      return;
+    }
+
     final token = StorageService.getToken();
     debugPrint('[Splash] Retrieved token: $token');
 

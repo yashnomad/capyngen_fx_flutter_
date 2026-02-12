@@ -4,6 +4,8 @@ import 'package:exness_clone/utils/bottom_nav_helper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../view/account/buy_sell_trade/cubit/trade_cubit.dart';
 
 import '../services/app_socket.dart';
 import '../view/auth_screen/login/model/user.dart';
@@ -226,6 +228,8 @@ class ApiService {
   static Future<void> logout(BuildContext context) async {
     try {
       // context.read<DataFeedProvider>().reset();
+      context.read<DataFeedProvider>().reset();
+      context.read<TradeCubit>().reset();
       AppSocket().disconnect();
 
       // 2. Clear auth token
@@ -413,6 +417,7 @@ class ApiService {
       },
     );
   }
+
   static Future<ApiResponse<Map<String, dynamic>>> getTradesByStatus(
       String accountId, String status) async {
     return await _apiController.get<Map<String, dynamic>>(
@@ -519,12 +524,10 @@ class ApiService {
     );
   }
 
-
   static Future<ApiResponse<Map<String, dynamic>>> referralLink() async {
     return await _apiController
         .get<Map<String, dynamic>>(ApiEndpoint.referralLink);
   }
-
 
   static Future<ApiResponse<Map<String, dynamic>>> getLeaderboard({
     required String type,

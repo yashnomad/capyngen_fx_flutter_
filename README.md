@@ -206,3 +206,31 @@ dart pub run flutter_launcher_icons:main -f flutter_launcher_icons-fourxtradz.ya
 dart pub run flutter_native_splash:create --path flutter_native_splash-fourxtradz.yaml
 flutter run --flavor fourxtradz -t lib/main_fourxtradz.dart
 flutter build apk --flavor fourxtradz -t lib/main_fourxtradz.dart
+
+# Fxcelite
+dart pub run flutter_launcher_icons:main -f flutter_launcher_icons-fxcelite.yaml
+dart pub run flutter_native_splash:create --path flutter_native_splash-fxcelite.yaml
+flutter run --flavor fxcelite -t lib/main_fxcelite.dart
+flutter build apk --flavor fxcelite -t lib/main_fxcelite.dart
+
+# agmmarket
+dart pub run flutter_launcher_icons:main -f flutter_launcher_icons-agmmarket.yaml
+dart pub run flutter_native_splash:create --path flutter_native_splash-agmmarket.yaml
+
+# aoneprimefx
+dart pub run flutter_launcher_icons:main -f flutter_launcher_icons-aoneprimefx.yaml
+dart pub run flutter_native_splash:create --path flutter_native_splash-aoneprimefx.yaml
+flutter run --flavor aoneprimefx -t lib/main_aoneprimefx.dart
+flutter build apk --flavor aoneprimefx -t lib/main_aoneprimefx.dart
+
+# Vintageprime
+dart pub run flutter_launcher_icons:main -f flutter_launcher_icons-vintageprimefx.yaml
+dart pub run flutter_native_splash:create --path flutter_native_splash-vintageprimefx.yaml
+flutter run --flavor vintageprimefx -t lib/main_vintageprimefx.dart
+flutter build apk --flavor vintageprimefx -t lib/main_vintageprimefx.dart
+
+# Aurelianglobal
+dart pub run flutter_launcher_icons:main -f flutter_launcher_icons-aurelianglobal.yaml
+dart pub run flutter_native_splash:create --path flutter_native_splash-aurelianglobal.yaml
+flutter run --flavor aurelianglobal -t lib/main_aurelianglobal.dart
+flutter build apk --flavor aurelianglobal -t lib/main_aurelianglobal.dart

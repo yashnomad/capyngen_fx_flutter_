@@ -37,7 +37,6 @@ class _EnterEmailScreenState extends State<EnterEmailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: SimpleAppbar(title: 'Enter your email'),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Form(
@@ -46,7 +45,7 @@ class _EnterEmailScreenState extends State<EnterEmailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Use this email to sign in to Exness',
+                'Use this email to sign in and receive updates about your account.',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
@@ -71,18 +70,13 @@ class _EnterEmailScreenState extends State<EnterEmailScreen> {
                 ),
               ),
               const Spacer(),
-
               PremiumAppButton(text: 'Continue'),
-
-
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _onContinuePressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppFlavorColor.primary,
-
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
