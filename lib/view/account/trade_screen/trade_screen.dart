@@ -3,24 +3,28 @@ import 'dart:io';
 import 'package:exness_clone/core/extensions.dart';
 import 'package:exness_clone/services/storage_service.dart';
 import 'package:exness_clone/utils/snack_bar.dart';
-import 'package:exness_clone/view/account/buy_sell_trade/demo_screen.dart';
-import 'package:exness_clone/view/account/buy_sell_trade/model/ws_equity_data.dart';
-import 'package:exness_clone/view/account/trade_screen/widget/history_summary_card.dart';
+
+import 'package:exness_clone/view/account/buy_sell_trade/model/ws_equity_data.dart'
+    as eq_data;
 import 'package:exness_clone/view/account/trade_screen/widget/modify_trade.dart';
-import 'package:exness_clone/view/account/trade_screen/widget/order_prgress_card.dart';
-import 'package:exness_clone/view/trade/widget/account_summary_card.dart';
+import 'package:exness_clone/view/account/trade_screen/widget/binance_position_card.dart';
 import 'package:exness_clone/widget/button/premium_app_button.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+
+import '../../../provider/datafeed_provider.dart';
+import '../../../services/data_feed_ws.dart' as feed_ws;
 import '../../../services/switch_account_service.dart';
 import '../../../services/trade_pdf_service.dart';
 import '../../../theme/app_colors.dart';
-import '../../trade/widget/unified_summary_card.dart';
+import '../../../theme/app_flavor_color.dart';
 import '../buy_sell_trade/cubit/trade_cubit.dart';
 import '../buy_sell_trade/cubit/trade_state.dart';
 import '../buy_sell_trade/model/trade_model.dart';
 import '../widget/account_symbol_section.dart';
+import '../../trade/model/trade_account.dart';
 
 class TradeScreen extends StatefulWidget {
   const TradeScreen({super.key});
@@ -30,14 +34,27 @@ class TradeScreen extends StatefulWidget {
 }
 
 class _TradeScreenState extends State<TradeScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   final int _tabIndex = 3;
   String? _lastFetchedAccountId;
 
+  final Color _bgDark = const Color(0xFF161A1E);
+  final Color _cardDark = const Color(0xFF1E2329);
+  final Color _textGreyDark = const Color(0xFF848E9C);
+  final Color _dividerDark = const Color(0xFF2B3139);
+  final Color _binanceGreen = const Color(0xFF0ECB81);
+  final Color _binanceRed = const Color(0xFFF6465D);
+
+  final Color _bgLight = const Color(0xFFF5F5F5);
+  final Color _cardLight = const Color(0xFFFFFFFF);
+  final Color _textGreyLight = const Color(0xFF707A8A);
+  final Color _dividerLight = const Color(0xFFE6E8EA);
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: _tabIndex, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -48,15 +65,24 @@ class _TradeScreenState extends State<TradeScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_lastFetchedAccountId != null) {
+        _fetchDataForAccount(_lastFetchedAccountId!, forceRefresh: true);
+      }
+    }
   }
 
   void _fetchDataForAccount(String accountId, {bool forceRefresh = false}) {
     if (!forceRefresh && _lastFetchedAccountId == accountId) {
       return;
     }
-
     _lastFetchedAccountId = accountId;
     final jwt = StorageService.getToken();
 
@@ -87,948 +113,711 @@ class _TradeScreenState extends State<TradeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final Color bgColor = isDark ? _bgDark : _bgLight;
+    final Color cardColor = isDark ? _cardDark : _cardLight;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color greyText = isDark ? _textGreyDark : _textGreyLight;
+    final Color dividerColor = isDark ? _dividerDark : _dividerLight;
+
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: SwitchAccountService(
-          accountBuilder: (context, activeAccount) {
-            if (activeAccount.id != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _fetchDataForAccount(activeAccount.id!);
-              });
-            }
+      child: SwitchAccountService(
+        accountBuilder: (context, activeAccount) {
+          if (activeAccount.id != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _fetchDataForAccount(activeAccount.id!);
+            });
+          }
 
-            return DefaultTabController(
-              length: _tabIndex,
-              child: Scaffold(
-                appBar: AppBar(
-                  automaticallyImplyLeading: false,
-                  elevation: 0,
-                  flexibleSpace: Container(color: context.backgroundColor),
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Trade',
-                            style: TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            "Account: ${activeAccount.accountId}",
-                            style: TextStyle(fontSize: 10, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                floatingActionButton: FloatingActionButton(
-                  onPressed: () {
-                    if (activeAccount.id != null) {
-                      context.read<TradeCubit>().hardRefresh(activeAccount.id!);
-                    }
-                  },
-                  backgroundColor: AppColor.themeColor,
-                  child: const Icon(Icons.refresh, color: Colors.white),
-                ),
-                body: RefreshIndicator(
-                  onRefresh: () async {
-                    if (activeAccount.id != null) {
-                      _fetchDataForAccount(activeAccount.id!,
-                          forceRefresh: true);
-                      await Future.delayed(const Duration(milliseconds: 500));
-                    }
-                  },
-                  child: BlocListener<TradeCubit, TradeState>(
-                    listenWhen: (prev, curr) =>
-                        prev.successMessage != curr.successMessage ||
-                        prev.errorMessage != curr.errorMessage,
-                    listener: (context, state) {
-                      if (state.successMessage != null) {
-                        SnackBarService.showSuccess(state.successMessage!);
-                      }
-                      if (state.errorMessage != null) {
-                        SnackBarService.showError(state.errorMessage!);
-                      }
-                    },
-                    child: NestedScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        SliverToBoxAdapter(
-                          child: BlocBuilder<TradeCubit, TradeState>(
-                            builder: (context, state) {
-                              // if (state.equity != null) {
-                              return UnifiedSummaryCard(
-                                selectedIndex: _tabController.index,
-                                state: state,
-                                onDownloadPdf: () async {
-                                  if (activeAccount.id != null) {
-                                    await _downloadPdf(context,
-                                        state.historyTrades, activeAccount.id!);
-                                  }
-                                },
-                              );
-                              // }
-                              // return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                        SliverAppBar(
-                          toolbarHeight: 50,
-                          pinned: true,
-                          titleSpacing: 0,
-                          flexibleSpace: Container(
-                            color: context.backgroundColor,
-                          ),
-                          title: TabBar(
-                            isScrollable: true,
-                            controller: _tabController,
-                            tabAlignment: TabAlignment.start,
-                            labelStyle:
-                                const TextStyle(fontWeight: FontWeight.w500),
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            dividerColor: Colors.grey.shade100,
-                            unselectedLabelColor: AppColor.greyColor,
-                            labelColor: context.tabLabelColor,
-                            indicatorColor: context.tabLabelColor,
-                            tabs: const [
-                              Tab(text: "Current Positions"),
-                              Tab(text: "Pending Positions"),
-                              Tab(text: "Order History"),
-                            ],
-                          ),
-                        ),
-                      ],
-                      body: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          BlocBuilder<TradeCubit, TradeState>(
-                            buildWhen: (previous, current) =>
-                                previous.activeTrades != current.activeTrades ||
-                                previous.equity != current.equity,
-                            builder: (context, state) {
-                              final hasActiveTrades =
-                                  state.activeTrades.isNotEmpty;
-
-                              if (!hasActiveTrades) {
-                                return _buildNoOrderUI(context, 'No Positions');
-                              }
-
-                              return Column(
+          return Scaffold(
+            backgroundColor: bgColor,
+            body: BlocListener<TradeCubit, TradeState>(
+              listenWhen: (prev, curr) =>
+                  prev.successMessage != curr.successMessage ||
+                  prev.errorMessage != curr.errorMessage,
+              listener: (context, state) {
+                if (state.successMessage != null) {
+                  SnackBarService.showSuccess(state.successMessage!);
+                }
+                if (state.errorMessage != null) {
+                  SnackBarService.showError(state.errorMessage!);
+                }
+              },
+              child: RefreshIndicator(
+                color: AppFlavorColor.primary,
+                backgroundColor: cardColor,
+                onRefresh: () async {
+                  if (activeAccount.id != null) {
+                    _fetchDataForAccount(activeAccount.id!, forceRefresh: true);
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  }
+                },
+                child: NestedScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            Container(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 24, 16, 10),
+                              color: bgColor,
+                              child: Row(
                                 children: [
-                                  Expanded(
-                                    child: ListView.separated(
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      padding: const EdgeInsets.only(top: 16),
-                                      itemCount: state.activeTrades.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 10),
-                                      itemBuilder: (context, index) {
-                                        final trade = state.activeTrades[index];
-                                        final liveProfit =
-                                            state.equity?.liveProfit.firstWhere(
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Positions',
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800,
+                                          color: textColor,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppFlavorColor.primary
+                                              .withOpacity(0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: AppFlavorColor.primary
+                                                  .withOpacity(0.3)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.account_balance_wallet,
+                                                size: 12,
+                                                color: AppFlavorColor.primary),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              "Acc #${activeAccount.accountId}",
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: AppFlavorColor.primary,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            BlocBuilder<TradeCubit, TradeState>(
+                                builder: (context, state) {
+                              return _buildBinanceTopCard(
+                                  context,
+                                  state,
+                                  activeAccount,
+                                  cardColor,
+                                  textColor,
+                                  greyText,
+                                  dividerColor);
+                            }),
+                          ],
+                        ),
+                      ),
+                      SliverAppBar(
+                        pinned: true,
+                        toolbarHeight: 0,
+                        collapsedHeight: 0,
+                        expandedHeight: 0,
+                        backgroundColor: bgColor,
+                        bottom: TabBar(
+                          controller: _tabController,
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          labelStyle: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                          unselectedLabelStyle: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
+                          indicatorSize: TabBarIndicatorSize.label,
+                          indicatorWeight: 3,
+                          indicatorColor: AppFlavorColor.primary,
+                          labelColor: textColor,
+                          unselectedLabelColor: greyText,
+                          dividerColor: dividerColor,
+                          labelPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                          tabs: const [
+                            Tab(text: "Active"),
+                            Tab(text: "Pending"),
+                            Tab(text: "History"),
+                          ],
+                        ),
+                      ),
+                    ];
+                  },
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      BlocBuilder<TradeCubit, TradeState>(
+                        buildWhen: (previous, current) =>
+                            previous.activeTrades != current.activeTrades ||
+                            previous.equity != current.equity,
+                        builder: (context, state) {
+                          final hasActiveTrades = state.activeTrades.isNotEmpty;
+
+                          return Column(
+                            children: [
+// Header removed
+                              if (hasActiveTrades) const SizedBox(height: 8),
+                              Expanded(
+                                child: !hasActiveTrades
+                                    ? _buildNoOrderUI(
+                                        context,
+                                        'No Open Positions',
+                                        isDark,
+                                        cardColor,
+                                        greyText)
+                                    : RefreshIndicator(
+                                        color: AppFlavorColor.primary,
+                                        backgroundColor: cardColor,
+                                        onRefresh: () async {
+                                          if (activeAccount.id != null) {
+                                            _fetchDataForAccount(
+                                                activeAccount.id!,
+                                                forceRefresh: true);
+                                            await Future.delayed(const Duration(
+                                                milliseconds: 500));
+                                          }
+                                        },
+                                        child: ListView.separated(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          padding: const EdgeInsets.all(16),
+                                          itemCount: state.activeTrades.length,
+                                          separatorBuilder: (_, __) =>
+                                              const SizedBox(height: 16),
+                                          itemBuilder: (context, index) {
+                                            final trade =
+                                                state.activeTrades[index];
+
+                                            final liveProfit = state
+                                                    .equity?.liveProfit
+                                                    .firstWhere(
                                                   (element) =>
                                                       element.id == trade.id,
-                                                  orElse: () => LiveProfit(
+                                                  orElse: () =>
+                                                      eq_data.LiveProfit(
                                                     id: trade.id,
                                                     profit: trade
                                                             .profitLossAmount ??
                                                         0.0,
                                                     avg: trade.avg,
-                                                    price: null,
                                                   ),
                                                 ) ??
-                                                LiveProfit(
-                                                    id: trade.id, profit: 0.0);
+                                                eq_data.LiveProfit(
+                                                    id: trade.id,
+                                                    profit: trade
+                                                            .currentProfit ??
+                                                        trade
+                                                            .profitLossAmount ??
+                                                        0.0);
 
-                                        return OrderProgressCard(
-                                          trade: trade,
-                                          liveProfit: liveProfit,
-                                          isHistory: false,
-                                          onModify: () async {
-                                            showModalBottomSheet(
-                                              context: context,
-                                              isScrollControlled: true,
-                                              shape:
-                                                  const RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.vertical(
-                                                        top: Radius.circular(
-                                                            16)),
-                                              ),
-                                              builder: (context) {
-                                                return ModifyOrderSheet(
-                                                  avgPrice: trade.avg ?? 0.0,
-                                                  isBuy: (trade.bs ?? 'Buy')
-                                                          .toLowerCase() ==
-                                                      'buy',
-                                                  currentSl: trade.sl,
-                                                  currentTp: trade.target,
-                                                  onConfirm: (double? newSl,
-                                                      double? newTp) {
-                                                    context
-                                                        .read<TradeCubit>()
-                                                        .updateTrade(
-                                                          tradeId: trade.id,
-                                                          sl: newSl,
-                                                          target: newTp,
-                                                        );
-                                                  },
-                                                );
-                                              },
+                                            return BinancePositionCard(
+                                              trade: trade,
+                                              liveProfit: liveProfit,
+                                              activeAccount: activeAccount,
+                                              cardColor: cardColor,
+                                              textColor: textColor,
+                                              greyText: greyText,
+                                              dividerColor: dividerColor,
+                                              isDark: isDark,
+                                              onModify: (t) =>
+                                                  _showModifyBottomSheet(
+                                                      context,
+                                                      t,
+                                                      cardColor,
+                                                      textColor),
+                                              onClose: (t, accountId) => context
+                                                  .read<TradeCubit>()
+                                                  .closeTrade(t.id, accountId),
                                             );
                                           },
-                                          onDelete: () async {
-                                            if (activeAccount.id != null) {
-                                              await context
-                                                  .read<TradeCubit>()
-                                                  .closeTrade(trade.id,
-                                                      activeAccount.id!);
-                                            }
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      color: context.backgroundColor,
-                                      border: Border(
-                                          top: BorderSide(
-                                              color: Colors.grey.shade300,
-                                              width: 0.5)),
-                                    ),
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        children: [
-                                          _buildSummaryItem("Balance",
-                                              state.equity?.balance ?? "0.00"),
-                                          _buildSummaryItem("Equity",
-                                              state.equity?.equity ?? "0.00"),
-                                          _buildSummaryItem(
-                                              "Used Mrg",
-                                              state.equity?.usedMargin ??
-                                                  "0.00"),
-                                          _buildSummaryItem(
-                                              "Free Mrg",
-                                              state.equity?.freeMargin ??
-                                                  "0.00"),
-                                          _buildSummaryItem(
-                                            "Total P/L",
-                                            state.equity?.pnl ?? "0.00",
-                                            isPnL: true,
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          BlocBuilder<TradeCubit, TradeState>(
-                              buildWhen: (previous, current) =>
-                                  previous.pendingTrades !=
-                                  current.pendingTrades,
-                              builder: (context, state) {
-                                if (state.pendingTrades.isEmpty) {
-                                  return _buildNoOrderUI(
-                                      context, 'No Pending Orders');
-                                }
-
-                                return Column(
-                                  children: [
-                                    Expanded(
-                                      child: ListView.separated(
-                                        // padding: const EdgeInsets.only(top: 8),
-                                        physics:
-                                            const AlwaysScrollableScrollPhysics(),
-                                        padding: const EdgeInsets.only(top: 16),
-                                        itemCount: state.pendingTrades.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 10),
-                                        itemBuilder: (context, index) {
-                                          final trade =
-                                              state.pendingTrades[index];
-                                          return OrderProgressCard(
-                                            trade: trade,
-                                            liveProfit: LiveProfit(
-                                                id: trade.id, profit: 0),
-                                            isHistory: false,
-                                            onDelete: () async {
-                                              if (activeAccount.id != null) {
-                                                await context
-                                                    .read<TradeCubit>()
-                                                    .closeTrade(trade.id,
-                                                        activeAccount.id!);
-                                              }
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }),
-                          BlocBuilder<TradeCubit, TradeState>(
-                            buildWhen: (previous, current) =>
-                                previous.historyTrades != current.historyTrades,
-                            builder: (context, state) {
-                              final hasHistoryTrades =
-                                  state.historyTrades.isNotEmpty;
-                              return hasHistoryTrades
-                                  ? ListView.separated(
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      padding: const EdgeInsets.only(top: 16),
-                                      itemCount: state.historyTrades.length + 1,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 10),
-                                      itemBuilder: (context, index) {
-                                        // if (index == 0) {
-                                        //   return HistorySummaryCard(
-                                        //     trades: state.historyTrades,
-                                        //     onDownload: () async {
-                                        //       if (activeAccount.id != null) {
-                                        //         await _downloadPdf(
-                                        //           context,
-                                        //           state.historyTrades,
-                                        //           activeAccount.id!,
-                                        //         );
-                                        //       }
-                                        //     },
-                                        //   );
-                                        // }
-                                        final trade =
-                                            state.historyTrades[index];
-                                        // state.historyTrades[index - 1];
-                                        final liveProfit = LiveProfit(
-                                          id: trade.id,
-                                          profit: trade.profitLossAmount ?? 0.0,
-                                        );
-
-                                        return OrderProgressCard(
-                                          trade: trade,
-                                          liveProfit: liveProfit,
-                                          isHistory: true,
-                                          onDelete: () async {},
-                                        );
-                                      },
-                                    )
-                                  : _buildNoOrderUI(
-                                      context, 'No Order History');
-                            },
-                          ),
-                        ],
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    ),
+                      BlocBuilder<TradeCubit, TradeState>(
+                          buildWhen: (previous, current) =>
+                              previous.pendingTrades != current.pendingTrades,
+                          builder: (context, state) {
+                            if (state.pendingTrades.isEmpty) {
+                              return _buildNoOrderUI(
+                                  context,
+                                  'No Pending Orders',
+                                  isDark,
+                                  cardColor,
+                                  greyText);
+                            }
+                            return RefreshIndicator(
+                              color: AppFlavorColor.primary,
+                              backgroundColor: cardColor,
+                              onRefresh: () async {
+                                if (activeAccount.id != null) {
+                                  _fetchDataForAccount(activeAccount.id!,
+                                      forceRefresh: true);
+                                  await Future.delayed(
+                                      const Duration(milliseconds: 500));
+                                }
+                              },
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(16),
+                                itemCount: state.pendingTrades.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final trade = state.pendingTrades[index];
+                                  return _buildCustomPendingCard(
+                                      context,
+                                      trade,
+                                      activeAccount,
+                                      cardColor,
+                                      textColor,
+                                      greyText,
+                                      dividerColor,
+                                      isDark);
+                                },
+                              ),
+                            );
+                          }),
+                      BlocBuilder<TradeCubit, TradeState>(
+                        buildWhen: (previous, current) =>
+                            previous.historyTrades != current.historyTrades,
+                        builder: (context, state) {
+                          if (state.historyTrades.isEmpty) {
+                            return _buildNoOrderUI(context, 'No Order History',
+                                isDark, cardColor, greyText);
+                          }
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    InkWell(
+                                      onTap: () async {
+                                        if (activeAccount.id != null) {
+                                          await _downloadPdf(
+                                              context,
+                                              state.historyTrades,
+                                              activeAccount.id!);
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.picture_as_pdf,
+                                                color: AppFlavorColor.primary,
+                                                size: 16),
+                                            const SizedBox(width: 4),
+                                            Text("Export PDF",
+                                                style: TextStyle(
+                                                    color:
+                                                        AppFlavorColor.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13)),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: RefreshIndicator(
+                                  color: AppFlavorColor.primary,
+                                  backgroundColor: cardColor,
+                                  onRefresh: () async {
+                                    if (activeAccount.id != null) {
+                                      _fetchDataForAccount(activeAccount.id!,
+                                          forceRefresh: true);
+                                      await Future.delayed(
+                                          const Duration(milliseconds: 500));
+                                    }
+                                  },
+                                  child: ListView.separated(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 0, 16, 16),
+                                    itemCount: state.historyTrades.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final trade = state.historyTrades[index];
+                                      return _buildCustomHistoryCard(
+                                          trade,
+                                          cardColor,
+                                          textColor,
+                                          greyText,
+                                          dividerColor,
+                                          isDark);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildNoOrderUI(BuildContext context, String orderType) {
+  Widget _buildBinanceTopCard(
+      BuildContext context,
+      TradeState state,
+      Account activeAccount,
+      Color cardColor,
+      Color textColor,
+      Color greyText,
+      Color dividerColor) {
+    final bool hasActiveTrades = state.activeTrades.isNotEmpty;
+
+    final acctBalanceStr = activeAccount.balance?.toString() ?? "0.00";
+    final double acctBalDouble = double.tryParse(acctBalanceStr) ?? 0.0;
+    final String formattedBalance = acctBalDouble.toStringAsFixed(2);
+
+    String balance = state.equity?.balance ?? formattedBalance;
+    String equity = state.equity?.equity ?? formattedBalance;
+    String pnl = state.equity?.pnl ?? "0.00";
+    String usedMargin = state.equity?.usedMargin ?? "0.00";
+    String freeMargin = state.equity?.freeMargin ?? formattedBalance;
+
+    if (!hasActiveTrades) {
+      pnl = "0.00";
+      usedMargin = "0.00";
+      equity = balance;
+      freeMargin = balance;
+    }
+
+    final double pnlVal = double.tryParse(pnl) ?? 0.0;
+
+    final pnlColor = (!hasActiveTrades || pnlVal == 0)
+        ? greyText
+        : (pnlVal > 0 ? _binanceGreen : _binanceRed);
+    final String pnlDisplay = (!hasActiveTrades || pnlVal == 0)
+        ? "0.00"
+        : (pnlVal > 0 && !pnl.startsWith('+') ? "+$pnl" : pnl);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildTopCardStat(
+                  "Unrealized PNL (USD)", pnlDisplay, pnlColor, greyText,
+                  isLarge: true),
+              _buildTopCardStat("Equity", equity, textColor, greyText,
+                  isLarge: true, alignRight: true),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(color: dividerColor, height: 1),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildTopCardStat("Balance", balance, textColor, greyText),
+              _buildTopCardStat("Used Margin", usedMargin, textColor, greyText),
+              _buildTopCardStat("Free Margin", freeMargin, textColor, greyText,
+                  alignRight: true),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopCardStat(
+      String label, String value, Color valColor, Color greyText,
+      {bool isLarge = false, bool alignRight = false}) {
+    return Column(
+      crossAxisAlignment:
+          alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(color: greyText, fontSize: isLarge ? 12 : 11)),
+        SizedBox(height: isLarge ? 4 : 2),
+        Text(value,
+            style: TextStyle(
+                color: valColor,
+                fontSize: isLarge ? 20 : 14,
+                fontWeight: isLarge ? FontWeight.bold : FontWeight.w600)),
+      ],
+    );
+  }
+
+// ... method removed ...}
+
+  Widget _buildCustomPendingCard(
+      BuildContext context,
+      TradeModel trade,
+      Account activeAccount,
+      Color cardColor,
+      Color textColor,
+      Color greyText,
+      Color dividerColor,
+      bool isDark) {
+    final isBuy = (trade.bs ?? 'Buy').toLowerCase() == 'buy';
+    final sideColor = isBuy ? _binanceGreen : _binanceRed;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: cardColor, borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(isBuy ? "Limit Buy" : "Limit Sell",
+                  style: TextStyle(
+                      color: sideColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14)),
+              const SizedBox(width: 8),
+              Text(trade.symbol ?? "Unknown",
+                  style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14)),
+              const Spacer(),
+              Text(trade.openedAt?.split(' ').first ?? "",
+                  style: TextStyle(color: greyText, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildGridStat(
+                  "Amount", trade.lot.toString(), textColor, greyText),
+              _buildGridStat("Order Price",
+                  trade.avg?.toStringAsFixed(2) ?? "0.00", textColor, greyText,
+                  crossAlign: CrossAxisAlignment.end),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: _buildActionButton("Cancel Order", textColor, dividerColor,
+                bgColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                onTap: () async {
+              if (activeAccount.id != null) {
+                await context
+                    .read<TradeCubit>()
+                    .closeTrade(trade.id, activeAccount.id!);
+              }
+            }),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomHistoryCard(TradeModel trade, Color cardColor,
+      Color textColor, Color greyText, Color dividerColor, bool isDark) {
+    final isBuy = (trade.bs ?? 'Buy').toLowerCase() == 'buy';
+    final pnlVal = trade.profitLossAmount ?? 0.0;
+    final pnlColor = pnlVal >= 0 ? _binanceGreen : _binanceRed;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: cardColor, borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(isBuy ? "Buy" : "Sell",
+                      style: TextStyle(
+                          color: isBuy ? _binanceGreen : _binanceRed,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Text(trade.symbol ?? "Unknown",
+                      style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                ],
+              ),
+              Text(trade.openedAt?.split('.').first ?? "",
+                  style: TextStyle(color: greyText, fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildGridStat(
+                  "Filled", trade.lot.toString(), textColor, greyText),
+              _buildGridStat("Entry Price",
+                  trade.avg?.toStringAsFixed(2) ?? "0.00", textColor, greyText),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text("Realized PNL",
+                      style: TextStyle(color: greyText, fontSize: 11)),
+                  const SizedBox(height: 2),
+                  Text("${pnlVal >= 0 ? '+' : ''}${pnlVal.toStringAsFixed(2)}",
+                      style: TextStyle(
+                          color: pnlColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                ],
+              )
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridStat(
+      String label, String value, Color textColor, Color greyText,
+      {CrossAxisAlignment crossAlign = CrossAxisAlignment.start}) {
+    return Column(
+      crossAxisAlignment: crossAlign,
+      children: [
+        Text(label, style: TextStyle(color: greyText, fontSize: 11)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: TextStyle(
+                color: textColor, fontSize: 13, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(String label, Color textColor, Color borderColor,
+      {Color? bgColor, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+            color: bgColor ?? Colors.transparent,
+            border: Border.all(
+                color: bgColor == null ? borderColor : Colors.transparent),
+            borderRadius: BorderRadius.circular(6)),
+        child: Text(label,
+            style: TextStyle(
+                color: textColor, fontSize: 13, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  void _showModifyBottomSheet(BuildContext context, TradeModel trade,
+      Color cardColor, Color textColor) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return ModifyOrderSheet(
+          avgPrice: trade.avg ?? 0.0,
+          isBuy: (trade.bs ?? 'Buy').toLowerCase() == 'buy',
+          currentSl: trade.sl,
+          currentTp: trade.target,
+          onConfirm: (double? newSl, double? newTp) {
+            context.read<TradeCubit>().updateTrade(
+                  tradeId: trade.id,
+                  sl: newSl,
+                  target: newTp,
+                );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildNoOrderUI(BuildContext context, String title, bool isDark,
+      Color cardColor, Color greyText) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/image/no_order.png', height: 70),
-          Text(orderType,
+          Container(
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark
+                  ? Colors.white.withOpacity(0.03)
+                  : Colors.black.withOpacity(0.03),
+            ),
+            child: Icon(CupertinoIcons.doc_text_search,
+                size: 60, color: greyText.withOpacity(0.5)),
+          ),
+          const SizedBox(height: 24),
+          Text(title,
               style: TextStyle(
-                  color: AppColor.greyColor,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13)),
-          const SizedBox(height: 15),
+                  color: greyText,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                  fontSize: 16)),
+          const SizedBox(height: 32),
           PremiumAppButton(
-            text: 'New Order',
+            text: 'Open a Trade',
             onPressed: () {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 useSafeArea: true,
+                backgroundColor: cardColor,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 builder: (context) {
                   return const AccountSymbolSection();
                 },
               );
             },
-            width: MediaQuery.of(context).size.width * 0.4,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value, {bool isPnL = false}) {
-    double val = double.tryParse(value) ?? 0.0;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "$label: ",
-            style: const TextStyle(
-                fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color:
-                  isPnL ? (val >= 0 ? Colors.green : Colors.red) : Colors.black,
-            ),
+            width: MediaQuery.of(context).size.width * 0.5,
           ),
         ],
       ),
     );
   }
 }
-
-/*import 'dart:io';
-
-import 'package:exness_clone/core/extensions.dart';
-import 'package:exness_clone/services/storage_service.dart';
-import 'package:exness_clone/utils/snack_bar.dart';
-import 'package:exness_clone/view/account/buy_sell_trade/model/ws_equity_data.dart';
-import 'package:exness_clone/view/account/trade_screen/widget/history_summary_card.dart';
-import 'package:exness_clone/view/account/trade_screen/widget/modify_trade.dart';
-import 'package:exness_clone/view/account/trade_screen/widget/order_prgress_card.dart';
-import 'package:exness_clone/view/trade/widget/account_summary_card.dart';
-import 'package:exness_clone/widget/button/premium_app_button.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../../../services/switch_account_service.dart';
-import '../../../services/trade_pdf_service.dart';
-import '../../../theme/app_colors.dart';
-import '../buy_sell_trade/cubit/trade_cubit.dart';
-import '../buy_sell_trade/cubit/trade_state.dart';
-import '../buy_sell_trade/model/trade_model.dart';
-import '../widget/account_symbol_section.dart';
-
-class TradeScreen extends StatefulWidget {
-  const TradeScreen({super.key});
-
-  @override
-  State<TradeScreen> createState() => _TradeScreenState();
-}
-
-class _TradeScreenState extends State<TradeScreen>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-  final int _tabIndex = 3;
-  String? _lastFetchedAccountId;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabIndex, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  void _fetchDataForAccount(String accountId, {bool forceRefresh = false}) {
-    if (!forceRefresh && _lastFetchedAccountId == accountId) {
-      return;
-    }
-
-    _lastFetchedAccountId = accountId;
-    final jwt = StorageService.getToken();
-
-    context.read<TradeCubit>().fetchOpenTrades(accountId);
-    context.read<TradeCubit>().fetchHistoryTrades(accountId);
-
-    if (jwt != null) {
-      context.read<TradeCubit>().startSocket(jwt: jwt, userId: accountId);
-    }
-  }
-
-  Future<void> _downloadPdf(
-    BuildContext context,
-    List<TradeModel> trades,
-    String accountId,
-  ) async {
-    try {
-      SnackBarService.showSuccess("Generating PDF...");
-      final path = await TradePdfService.saveTradeHistoryPdf(
-        trades: trades,
-        accountId: accountId,
-      );
-      SnackBarService.showSuccess("Saved in Downloads:\n$path");
-    } catch (e) {
-      SnackBarService.showError("Failed to generate PDF");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: SwitchAccountService(
-          accountBuilder: (context, activeAccount) {
-            if (activeAccount.id != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _fetchDataForAccount(activeAccount.id!);
-              });
-            }
-
-            return DefaultTabController(
-              length: _tabIndex,
-              child: Scaffold(
-                appBar: AppBar(
-                  automaticallyImplyLeading: false,
-                  elevation: 0,
-                  flexibleSpace: Container(color: context.backgroundColor),
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Trade',
-                            style: TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            "Account: ${activeAccount.accountId}",
-                            style: TextStyle(fontSize: 10, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                body: RefreshIndicator(
-                  onRefresh: () async {
-                    if (activeAccount.id != null) {
-                      _fetchDataForAccount(activeAccount.id!,
-                          forceRefresh: true);
-                      await Future.delayed(const Duration(milliseconds: 500));
-                    }
-                  },
-                  child: BlocListener<TradeCubit, TradeState>(
-                    listenWhen: (prev, curr) =>
-                        prev.successMessage != curr.successMessage ||
-                        prev.errorMessage != curr.errorMessage,
-                    listener: (context, state) {
-                      if (state.successMessage != null) {
-                        SnackBarService.showSuccess(state.successMessage!);
-                      }
-                      if (state.errorMessage != null) {
-                        SnackBarService.showError(state.errorMessage!);
-                      }
-                    },
-                    child: NestedScrollView(
-                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        SliverToBoxAdapter(
-                          child: BlocBuilder<TradeCubit, TradeState>(
-                            buildWhen: (previous, current) =>
-                                previous.equity != current.equity,
-                            builder: (context, state) {
-                              if (state.equity != null) {
-                                return AccountSummaryCard(
-                                  balance: state.equity!.balance ?? '',
-                                  equity: state.equity!.equity,
-                                  margin: state.equity!.usedMargin ?? '',
-                                  freeMargin: state.equity!.freeMargin ?? '',
-                                  floatingPnL: state.equity!.pnl,
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                        SliverAppBar(
-                          toolbarHeight: 50,
-                          pinned: true,
-                          titleSpacing: 0,
-                          flexibleSpace: Container(
-                            color: context.backgroundColor,
-                          ),
-                          title: TabBar(
-                            isScrollable: true,
-                            controller: _tabController,
-                            tabAlignment: TabAlignment.start,
-                            labelStyle:
-                                const TextStyle(fontWeight: FontWeight.w500),
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            dividerColor: Colors.grey.shade100,
-                            unselectedLabelColor: AppColor.greyColor,
-                            labelColor: context.tabLabelColor,
-                            indicatorColor: context.tabLabelColor,
-                            tabs: const [
-                              Tab(text: "Current Positions"),
-                              Tab(text: "Pending Positions"),
-                              Tab(text: "Order History"),
-                            ],
-                          ),
-                        ),
-                      ],
-                      body: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          BlocBuilder<TradeCubit, TradeState>(
-                            buildWhen: (previous, current) =>
-                                previous.activeTrades != current.activeTrades ||
-                                previous.equity != current.equity,
-                            builder: (context, state) {
-                              final hasActiveTrades =
-                                  state.activeTrades.isNotEmpty;
-
-                              if (!hasActiveTrades) {
-                                return _buildNoOrderUI(context, 'No Positions');
-                              }
-
-                              return Column(
-                                children: [
-                                  Expanded(
-                                    child: ListView.separated(
-                                      // padding: const EdgeInsets.all(12),
-                                      itemCount: state.activeTrades.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 10),
-                                      itemBuilder: (context, index) {
-                                        final trade = state.activeTrades[index];
-                                        final liveProfit =
-                                            state.equity?.liveProfit.firstWhere(
-                                                  (element) =>
-                                                      element.id == trade.id,
-                                                  orElse: () => LiveProfit(
-                                                    id: trade.id,
-                                                    profit: trade
-                                                            .profitLossAmount ??
-                                                        0.0,
-                                                    avg: trade.avg,
-                                                    price: null,
-                                                  ),
-                                                ) ??
-                                                LiveProfit(
-                                                    id: trade.id, profit: 0.0);
-
-                                        return OrderProgressCard(
-                                          trade: trade,
-                                          liveProfit: liveProfit,
-                                          isHistory: false,
-                                          onModify: () async {
-                                            showModalBottomSheet(
-                                              context: context,
-                                              isScrollControlled: true,
-                                              shape:
-                                                  const RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.vertical(
-                                                        top: Radius.circular(
-                                                            16)),
-                                              ),
-                                              builder: (context) {
-                                                return ModifyOrderSheet(
-                                                  avgPrice: trade.avg ?? 0.0,
-                                                  isBuy: (trade.bs ?? 'Buy')
-                                                          .toLowerCase() ==
-                                                      'buy',
-                                                  currentSl: trade.sl,
-                                                  currentTp: trade.target,
-                                                  onConfirm: (double? newSl,
-                                                      double? newTp) {
-                                                    context
-                                                        .read<TradeCubit>()
-                                                        .updateTrade(
-                                                          tradeId: trade.id,
-                                                          sl: newSl,
-                                                          target: newTp,
-                                                        );
-                                                  },
-                                                );
-                                              },
-                                            );
-                                          },
-                                          onDelete: () async {
-                                            if (activeAccount.id != null) {
-                                              await context
-                                                  .read<TradeCubit>()
-                                                  .closeTrade(trade.id,
-                                                      activeAccount.id!);
-                                            }
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      color: context.backgroundColor,
-                                      border: Border(
-                                          top: BorderSide(
-                                              color: Colors.grey.shade300,
-                                              width: 0.5)),
-                                    ),
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        children: [
-                                          _buildSummaryItem("Balance",
-                                              state.equity?.balance ?? "0.00"),
-                                          _buildSummaryItem("Equity",
-                                              state.equity?.equity ?? "0.00"),
-                                          _buildSummaryItem(
-                                              "Used Mrg",
-                                              state.equity?.usedMargin ??
-                                                  "0.00"),
-                                          _buildSummaryItem(
-                                              "Free Mrg",
-                                              state.equity?.freeMargin ??
-                                                  "0.00"),
-                                          _buildSummaryItem(
-                                            "Total P/L",
-                                            state.equity?.pnl ?? "0.00",
-                                            isPnL: true,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          BlocBuilder<TradeCubit, TradeState>(
-                              buildWhen: (previous, current) =>
-                                  previous.pendingTrades !=
-                                  current.pendingTrades,
-                              builder: (context, state) {
-                                if (state.pendingTrades.isEmpty) {
-                                  return _buildNoOrderUI(
-                                      context, 'No Pending Orders');
-                                }
-
-                                return Column(
-                                  children: [
-                                    Expanded(
-                                      child: ListView.separated(
-                                        // padding: const EdgeInsets.all(12),
-                                        itemCount: state.pendingTrades.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 10),
-                                        itemBuilder: (context, index) {
-                                          final trade =
-                                              state.pendingTrades[index];
-                                          return OrderProgressCard(
-                                            trade: trade,
-                                            liveProfit: LiveProfit(
-                                                id: trade.id, profit: 0),
-                                            isHistory: false,
-                                            onDelete: () async {
-                                              if (activeAccount.id != null) {
-                                                await context
-                                                    .read<TradeCubit>()
-                                                    .closeTrade(trade.id,
-                                                        activeAccount.id!);
-                                              }
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    if (state.pendingTrades.isNotEmpty)
-                                      _buildTotalSection("Total Pending",
-                                          state.pendingTrades.length.toString(),
-                                          isPrice: false),
-                                  ],
-                                );
-                              }),
-                          BlocBuilder<TradeCubit, TradeState>(
-                            buildWhen: (previous, current) =>
-                                previous.historyTrades != current.historyTrades,
-                            builder: (context, state) {
-                              final hasHistoryTrades =
-                                  state.historyTrades.isNotEmpty;
-                              return hasHistoryTrades
-                                  ? ListView.separated(
-                                      // padding: const EdgeInsets.all(12),
-                                      itemCount: state.historyTrades.length + 1,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 10),
-                                      itemBuilder: (context, index) {
-                                        if (index == 0) {
-                                          return HistorySummaryCard(
-                                            trades: state.historyTrades,
-                                            onDownload: () async {
-                                              if (activeAccount.id != null) {
-                                                await _downloadPdf(
-                                                  context,
-                                                  state.historyTrades,
-                                                  activeAccount.id!,
-                                                );
-                                              }
-                                            },
-                                          );
-                                        }
-                                        final trade =
-                                            state.historyTrades[index - 1];
-                                        final liveProfit = LiveProfit(
-                                          id: trade.id,
-                                          profit: trade.profitLossAmount ?? 0.0,
-                                        );
-
-                                        return OrderProgressCard(
-                                          trade: trade,
-                                          liveProfit: liveProfit,
-                                          isHistory: true,
-                                          onDelete: () async {},
-                                        );
-                                      },
-                                    )
-                                  : _buildNoOrderUI(
-                                      context, 'No Order History');
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoOrderUI(BuildContext context, String orderType) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/image/no_order.png', height: 70),
-          Text(orderType,
-              style: TextStyle(
-                  color: AppColor.greyColor,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13)),
-          const SizedBox(height: 15),
-          PremiumAppButton(
-            text: 'New Order',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                builder: (context) {
-                  return const AccountSymbolSection();
-                },
-              );
-            },
-            width: MediaQuery.of(context).size.width * 0.4,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTotalSection(String label, String value, {bool isPrice = true}) {
-    final double val = double.tryParse(value) ?? 0;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.backgroundColor,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isPrice
-                  ? (val >= 0 ? Colors.green : Colors.red)
-                  : Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value, {bool isPnL = false}) {
-    double val = double.tryParse(value) ?? 0.0;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "$label: ",
-            style: const TextStyle(
-                fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color:
-                  isPnL ? (val >= 0 ? Colors.green : Colors.red) : Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}*/

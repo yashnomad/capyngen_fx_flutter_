@@ -102,7 +102,6 @@ class _ChartPageState extends State<ChartPage> {
 
     final symbolState = context.read<SymbolCubit>().state;
     String? symbolId;
-    double? lastKnownPrice;
 
     outerLoop:
     for (var key in symbolState.groupedSymbols.keys) {
@@ -129,7 +128,7 @@ class _ChartPageState extends State<ChartPage> {
 
     if (liveData != null && (isBuy ? liveData.ask : liveData.bid) > 0) {
       currentPrice = isBuy ? liveData.ask : liveData.bid;
-    } else {}
+    }
 
     if (currentPrice == 0.0) {
       SnackBarService.showError(
@@ -263,7 +262,7 @@ class _ChartPageState extends State<ChartPage> {
                                         : FontWeight.normal,
                                     color: isSelected
                                         ? AppFlavorColor.primary
-                                        : Colors.black,
+                                        : context.tabLabelColor,
                                   ),
                                 ),
                                 subtitle: Text(
@@ -413,6 +412,8 @@ class _ChartPageState extends State<ChartPage> {
   }
 
   Widget _buildTradeBottomBar(String accountId) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -480,9 +481,10 @@ class _ChartPageState extends State<ChartPage> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: context.tabLabelColor),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           isDense: true,

@@ -62,13 +62,16 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
     final typeBg =
         widget.isBuy ? const Color(0xFFE6F7EF) : const Color(0xFFFFE5E0);
 
-    return Padding(
-      // Handle keyboard covering text fields
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor, // Use card color for background
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
         left: 16,
         right: 16,
-        top: 16,
+        top: 20,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -106,20 +109,31 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF161A1E)
+                  : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade200),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Entry Price", style: TextStyle(color: Colors.grey)),
+                Text(
+                  "Entry Price",
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white54
+                        : Colors.grey,
+                  ),
+                ),
                 Text(
                   widget.avgPrice.toStringAsFixed(5),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Colors.black),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                  ),
                 ),
               ],
             ),
@@ -140,12 +154,34 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
                       fontSize: 12,
                       fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _slController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDecoration("Price (e.g. 1.0500)"),
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                  ),
+                  decoration: _inputDecoration("Price (e.g. 1.0500)").copyWith(
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF161A1E)
+                        : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: AppFlavorColor.primary, width: 1.5)),
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty)
                       return null; // Allow empty to remove SL
@@ -173,12 +209,34 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
                       fontSize: 12,
                       fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _tpController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDecoration("Price (e.g. 1.0600)"),
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                  ),
+                  decoration: _inputDecoration("Price (e.g. 1.0600)").copyWith(
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF161A1E)
+                        : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: AppFlavorColor.primary, width: 1.5)),
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty)
                       return null; // Allow empty
@@ -208,12 +266,21 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 45),
+                    minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(10)),
+                    side: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white24
+                          : Colors.grey.shade300,
+                    ),
                   ),
-                  child: const Text("Cancel",
-                      style: TextStyle(color: Colors.black)),
+                  child: Text("Cancel",
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.black)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -229,23 +296,25 @@ class _ModifyOrderSheetState extends State<ModifyOrderSheet> {
                       final double? tp =
                           tpText.isEmpty ? null : double.tryParse(tpText);
 
-                      widget.onConfirm(sl!, tp!);
+                      widget.onConfirm(sl, tp);
                       Navigator.pop(context);
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(0, 45),
+                    minimumSize: const Size(0, 48),
                     backgroundColor: AppFlavorColor.primary,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
                   ),
                   child: const Text("Confirm Modify",
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
         ],
       ),
     );

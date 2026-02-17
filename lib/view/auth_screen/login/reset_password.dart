@@ -1,4 +1,5 @@
 import 'package:exness_clone/network/api_service.dart';
+import 'package:exness_clone/theme/app_flavor_color.dart';
 import 'package:exness_clone/utils/snack_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +15,7 @@ class _ResetPasswordState extends State<ResetPassword> {
   bool _isLoading = false;
 
   // Design Colors
-  final Color primaryYellow = const Color(0xFFF1C16F);
+  final Color primaryYellow = AppFlavorColor.primary;
   final Color textColor = Colors.black;
   final Color borderColor = const Color(0xFFE2E8F0);
   final Color infoBlueBg = const Color(0xFFEFF6FF);

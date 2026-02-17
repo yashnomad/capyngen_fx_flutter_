@@ -1,4 +1,5 @@
 import 'package:exness_clone/core/extensions.dart';
+import 'package:exness_clone/theme/app_flavor_color.dart';
 import 'package:exness_clone/utils/validators.dart';
 import 'package:exness_clone/view/auth_screen/login/reset_password.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ class _SignInPageState extends State<SignInPage>
   final TextEditingController passwordController = TextEditingController();
   bool isPasswordHidden = true;
 
-  final Color primaryYellow = const Color(0xFFF1C16F);
+  final Color primaryYellow = AppFlavorColor.primary;
   final Color textColor = Colors.black;
   final Color borderColor = Colors.grey.shade300;
 

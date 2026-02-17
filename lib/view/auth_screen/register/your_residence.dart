@@ -1,4 +1,5 @@
 import 'package:country_picker/country_picker.dart';
+import 'package:exness_clone/theme/app_flavor_color.dart';
 import 'package:exness_clone/widget/button/premium_app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +28,7 @@ class _YourResidenceState extends State<YourResidence> {
   bool isChecked = true;
 
   // Figma Colors
-  final Color primaryYellow = const Color(0xFFF1C16F);
+  final Color primaryYellow = AppFlavorColor.primary;
   final Color textColor = Colors.black;
   final Color cardBgColor = const Color(0xFFF0EBE3); // Beige card for country
   final Color tipBgColor = const Color(0xFFFFF0EB); // Light orange tip card

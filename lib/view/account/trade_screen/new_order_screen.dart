@@ -76,120 +76,147 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: SwitchAccountService(accountBuilder: (context, account) {
-              return PremiumAppButton(
-                text: 'Place Order',
-                onPressed: () {
-                  showModalBottomSheet(
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    context: context,
-                    builder: (_) => ReactiveDataService(
-                      builder: (context, liveData, calculations) {
-                        return OrderConfirmationWidget(
-                          symbol: widget.symbol,
-                          orderType: _selectedExecution ?? "Market",
-                          direction: selectedSide,
-                          volume: lotCtrl.text,
-                          takeProfit:
-                              _tpCtrl.text.isEmpty ? null : _tpCtrl.text,
-                          stopLoss: _slCtrl.text.isEmpty ? null : _slCtrl.text,
-                          onConfirm: () {
-                            final cubit = context.read<TradeCubit>();
-                            final jwt = StorageService.getToken();
-                            final userId = StorageService.getUser();
+              return ValueListenableBuilder<TextEditingValue>(
+                valueListenable: lotCtrl,
+                builder: (context, value, child) {
+                  final text = value.text;
+                  final volume = double.tryParse(text);
+                  final isValid =
+                      text.isNotEmpty && volume != null && volume > 0;
 
-                            final tradeAccountId =
-                                account.id ?? userId?.id ?? '';
-                            final lotValue =
-                                double.tryParse(lotCtrl.text.trim()) ?? 0.1;
+                  return PremiumAppButton(
+                    text: 'Place Order',
+                    onPressed: isValid
+                        ? () {
+                            showModalBottomSheet(
+                              isScrollControlled: true,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16)),
+                              ),
+                              context: context,
+                              builder: (_) => ReactiveDataService(
+                                builder: (context, liveData, calculations) {
+                                  return OrderConfirmationWidget(
+                                    symbol: widget.symbol,
+                                    orderType: _selectedExecution ?? "Market",
+                                    direction: selectedSide,
+                                    volume: lotCtrl.text,
+                                    takeProfit: _tpCtrl.text.isEmpty
+                                        ? null
+                                        : _tpCtrl.text,
+                                    stopLoss: _slCtrl.text.isEmpty
+                                        ? null
+                                        : _slCtrl.text,
+                                    onConfirm: () {
+                                      final cubit = context.read<TradeCubit>();
+                                      final jwt = StorageService.getToken();
+                                      final userId = StorageService.getUser();
 
-                            final String executionType =
-                                _selectedExecution?.toLowerCase() ?? 'market';
-                            final double? limitPrice =
-                                double.tryParse(_limitPriceCtrl.text.trim());
+                                      final tradeAccountId =
+                                          account.id ?? userId?.id ?? '';
+                                      final lotValue = double.tryParse(
+                                              lotCtrl.text.trim()) ??
+                                          0.1;
 
-                            final double? tpValue = _tpCtrl.text.isEmpty
-                                ? null
-                                : double.tryParse(_tpCtrl.text.trim());
-                            final double? slValue = _slCtrl.text.isEmpty
-                                ? null
-                                : double.tryParse(_slCtrl.text.trim());
+                                      final String executionType =
+                                          _selectedExecution?.toLowerCase() ??
+                                              'market';
+                                      final double? limitPrice =
+                                          double.tryParse(
+                                              _limitPriceCtrl.text.trim());
 
-                            double avgPrice;
-                            if (executionType == 'limit' &&
-                                limitPrice != null) {
-                              avgPrice = limitPrice;
-                            } else {
-                              avgPrice = selectedSide == "Buy"
-                                  ? calculations.askValue
-                                  : calculations.bidValue;
-                            }
+                                      final double? tpValue =
+                                          _tpCtrl.text.isEmpty
+                                              ? null
+                                              : double.tryParse(
+                                                  _tpCtrl.text.trim());
+                                      final double? slValue =
+                                          _slCtrl.text.isEmpty
+                                              ? null
+                                              : double.tryParse(
+                                                  _slCtrl.text.trim());
 
-                            debugPrint(
-                                "🔍 Validation Check: Side=$selectedSide, Price=$avgPrice, SL=$slValue, TP=$tpValue");
+                                      double avgPrice;
+                                      if (executionType == 'limit' &&
+                                          limitPrice != null) {
+                                        avgPrice = limitPrice;
+                                      } else {
+                                        avgPrice = selectedSide == "Buy"
+                                            ? calculations.askValue
+                                            : calculations.bidValue;
+                                      }
 
-                            if (selectedSide == "Buy") {
-                              if (slValue != null && slValue >= avgPrice) {
-                                SnackBarService.showError(
-                                    "Invalid SL: For Buy, Stop Loss ($slValue) must be lower than Current Price ($avgPrice)");
-                                Navigator.pop(context);
-                                return;
-                              }
-                              if (tpValue != null && tpValue <= avgPrice) {
-                                SnackBarService.showError(
-                                    "Invalid TP: For Buy, Take Profit ($tpValue) must be higher than Current Price ($avgPrice)");
-                                Navigator.pop(context);
-                                return;
-                              }
-                            } else {
-                              if (slValue != null && slValue <= avgPrice) {
-                                SnackBarService.showError(
-                                    "Invalid SL: For Sell, Stop Loss ($slValue) must be higher than Current Price ($avgPrice)");
-                                Navigator.pop(context);
-                                return;
-                              }
-                              if (tpValue != null && tpValue >= avgPrice) {
-                                SnackBarService.showError(
-                                    "Invalid TP: For Sell, Take Profit ($tpValue) must be lower than Current Price ($avgPrice)");
-                                Navigator.pop(context);
-                                return;
-                              }
-                            }
+                                      debugPrint(
+                                          "🔍 Validation Check: Side=$selectedSide, Price=$avgPrice, SL=$slValue, TP=$tpValue");
 
-                            final payload = TradePayload(
-                              tradeAccountId: tradeAccountId,
-                              symbol: widget.id,
-                              lot: lotValue,
-                              bs: selectedSide,
-                              executionType: executionType,
-                              avg: avgPrice,
-                              target: tpValue,
-                              sl: slValue,
+                                      if (selectedSide == "Buy") {
+                                        if (slValue != null &&
+                                            slValue >= avgPrice) {
+                                          SnackBarService.showError(
+                                              "Invalid SL: For Buy, Stop Loss ($slValue) must be lower than Current Price ($avgPrice)");
+                                          Navigator.pop(context);
+                                          return;
+                                        }
+                                        if (tpValue != null &&
+                                            tpValue <= avgPrice) {
+                                          SnackBarService.showError(
+                                              "Invalid TP: For Buy, Take Profit ($tpValue) must be higher than Current Price ($avgPrice)");
+                                          Navigator.pop(context);
+                                          return;
+                                        }
+                                      } else {
+                                        if (slValue != null &&
+                                            slValue <= avgPrice) {
+                                          SnackBarService.showError(
+                                              "Invalid SL: For Sell, Stop Loss ($slValue) must be higher than Current Price ($avgPrice)");
+                                          Navigator.pop(context);
+                                          return;
+                                        }
+                                        if (tpValue != null &&
+                                            tpValue >= avgPrice) {
+                                          SnackBarService.showError(
+                                              "Invalid TP: For Sell, Take Profit ($tpValue) must be lower than Current Price ($avgPrice)");
+                                          Navigator.pop(context);
+                                          return;
+                                        }
+                                      }
+
+                                      final payload = TradePayload(
+                                        tradeAccountId: tradeAccountId,
+                                        symbol: widget.id,
+                                        lot: lotValue,
+                                        bs: selectedSide,
+                                        executionType: executionType,
+                                        avg: avgPrice,
+                                        target: tpValue,
+                                        sl: slValue,
+                                      );
+
+                                      debugPrint(
+                                          '📤 Sending Order: ${payload.toJson()}');
+
+                                      if (jwt != null) {
+                                        cubit.createTrade(
+                                          payload: payload,
+                                          jwt: jwt,
+                                          sl: slValue,
+                                          target: tpValue,
+                                        );
+                                      }
+
+                                      _slCtrl.clear();
+                                      _tpCtrl.clear();
+
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                },
+                                symbolName: widget.symbol,
+                              ),
                             );
-
-                            debugPrint('📤 Sending Order: ${payload.toJson()}');
-
-                            if (jwt != null) {
-                              cubit.createTrade(
-                                payload: payload,
-                                jwt: jwt,
-                                sl: slValue,
-                                target: tpValue,
-                              );
-                            }
-
-                            _slCtrl.clear();
-                            _tpCtrl.clear();
-
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                      symbolName: widget.symbol,
-                    ),
+                          }
+                        : null,
                   );
                 },
               );
@@ -277,7 +304,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         children: [
           Icon(
             isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-            color: isSelected ? Colors.black : Colors.grey,
+            color: isSelected ? AppFlavorColor.primary : Colors.grey,
             size: 20,
           ),
           const SizedBox(width: 8),

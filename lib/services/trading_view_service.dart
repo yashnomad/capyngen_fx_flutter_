@@ -48,13 +48,20 @@ class TradingViewService {
     required double ask,
     required int timestamp, // ✅ ADD THIS
   }) {
-    final avgPrice = (bid + ask) / 2;
+    // LOWER PRIORITY: Use Bid price to match standard charts/website
+    // final avgPrice = (bid + ask) / 2;
+    final price = bid;
+
+    // Normalizing timestamp to milliseconds
+    // (If < 10 digits, it's likely seconds. 10^10 is year 2286)
+    final int normalizedTime =
+        timestamp < 10000000000 ? timestamp * 1000 : timestamp;
 
     // notifier update (optional UI)
     final notifier = getPriceNotifier(symbol);
     notifier.value = PriceData(
       symbol: symbol,
-      currentPrice: avgPrice,
+      currentPrice: price,
       changePercent: 0,
       isPositive: true,
     );
@@ -62,8 +69,8 @@ class TradingViewService {
     if (!_controllerCache.containsKey(symbol)) return;
 
     final priceData = {
-      'time': timestamp,
-      'price': avgPrice,
+      'time': normalizedTime,
+      'price': price,
       'volume': 1,
     };
 
@@ -134,6 +141,48 @@ class TradingViewService {
   }
 
   /// ------------------------------------------------------------
+  /// Change Interval
+  /// ------------------------------------------------------------
+  Future<void> changeInterval(String symbol, String interval) async {
+    if (_controllerCache.containsKey(symbol)) {
+      debugPrint("⏱️ Changing interval for $symbol to $interval");
+      await _controllerCache[symbol]!.runJavaScript('''
+        (function() {
+          let attempts = 0;
+          const maxAttempts = 20; // Try for 10 seconds (20 * 500ms)
+
+          function setRes() {
+            if (window.tvWidget) {
+              try {
+                console.log("Attempting to change resolution to $interval");
+                // clear existing bar state
+                lastBar = null;
+                window.currentInterval = '$interval';
+                
+                window.tvWidget.chart().setResolution('$interval', function() {
+                  console.log("Resolution changed to $interval");
+                });
+              } catch(e) {
+                console.error("Error setting resolution: " + e);
+              }
+            } else {
+              attempts++;
+              if (attempts < maxAttempts) {
+                console.log("tvWidget not ready, retrying... " + attempts);
+                setTimeout(setRes, 500);
+              } else {
+                console.error("Failed to set resolution: tvWidget never initialized");
+              }
+            }
+          }
+           
+          setRes();
+        })();
+      ''');
+    }
+  }
+
+  /// ------------------------------------------------------------
   /// HTML + TradingView JS
   /// ------------------------------------------------------------
   String _buildChartingLibraryHtml(String symbol, String interval) {
@@ -162,81 +211,103 @@ class TradingViewService {
     let lastBar = null;
     let subscribers = {};
     let onHistoryCallback = null;
+    
+    // Global interval tracker
+    window.currentInterval = '$interval';
 
-   window.updateLiveData = function(data) {
-  const resolution = '$interval' === 'D'
-    ? 1440
-    : ('$interval' === 'W' ? 10080 : parseInt('$interval'));
+    window.updateLiveData = function(data) {
+      if (!window.currentInterval) {
+        window.currentInterval = '$interval';
+      }
+      
+      let paramsRes = parseInt(window.currentInterval);
+      if (isNaN(paramsRes)) {
+         if (window.currentInterval === 'D') paramsRes = 1440;
+         else if (window.currentInterval === 'W') paramsRes = 10080;
+         else paramsRes = 60; // Default fallback
+      }
+      
+      const resolution = paramsRes;
+      const barDuration = resolution * 60 * 1000;
+      const barTime = Math.floor(data.time / barDuration) * barDuration;
 
-  const barDuration = resolution * 60 * 1000;
-  const barTime = Math.floor(data.time / barDuration) * barDuration;
+      // 🟡 FIRST TICK OR RECOVERY FROM NULL (CRITICAL FIX)
+      if (!lastBar) {
+        lastBar = {
+          time: barTime,
+          open: data.price,
+          high: data.price,
+          low: data.price,
+          close: data.price,
+          volume: 0
+        };
+        Object.values(subscribers).forEach(cb => cb(lastBar));
+        return;
+      }
 
-  // 🟡 FIRST TICK
-  if (!lastBar) {
-    lastBar = {
-      time: barTime,
-      open: data.price,
-      high: data.price,
-      low: data.price,
-      close: data.price,
-      volume: data.volume
+      // 🟢 NEW CANDLE (Fresh Open Strategy)
+      if (barTime > lastBar.time) {
+        // ALWAYS start fresh at the current price for new Live Bars.
+        // This ensures the Open corresponds to the first received tick of this session,
+        // preventing visual glitches from mismatched history and ensuring correct Color (Red/Green).
+        lastBar = {
+          time: barTime,
+          open: data.price, 
+          high: data.price,
+          low: data.price,
+          close: data.price,
+          volume: 0 
+        };
+        Object.values(subscribers).forEach(cb => cb(lastBar));
+        return;
+      }
+
+      // 🔵 UPDATE CURRENT CANDLE
+      if (barTime === lastBar.time) {
+        lastBar.high = Math.max(lastBar.high, data.price);
+        lastBar.low = Math.min(lastBar.low, data.price);
+        lastBar.close = data.price;
+        // Volume is not accumulated for live ticks as we don't have real volume data
+        lastBar.volume = 0;
+        
+        Object.values(subscribers).forEach(cb => cb(lastBar));
+      }
     };
-    Object.values(subscribers).forEach(cb => cb(lastBar));
-    return;
-  }
-
-  // 🟢 NEW CANDLE
-  if (barTime > lastBar.time) {
-    lastBar = {
-      time: barTime,
-      open: lastBar.close,   // ✅ correct
-      high: data.price,      // ✅ reset
-      low: data.price,       // ✅ reset
-      close: data.price,
-      volume: data.volume
-    };
-    Object.values(subscribers).forEach(cb => cb(lastBar));
-    return;
-  }
-
-  // 🔵 UPDATE CURRENT CANDLE
-  if (barTime === lastBar.time) {
-    lastBar.high = Math.max(lastBar.high, data.price);
-    lastBar.low = Math.min(lastBar.low, data.price);
-    lastBar.close = data.price;
-    lastBar.volume += data.volume;
-    Object.values(subscribers).forEach(cb => cb(lastBar));
-  }
-};
-
-
 
     window.onHistoryReady = function(bars) {
       if (bars && bars.length) {
+        bars.sort((a, b) => a.time - b.time);
         lastBar = bars[bars.length - 1];
+        
+        console.log("History loaded. Last bar time: " + new Date(lastBar.time).toISOString());
         onHistoryCallback(bars, { noData: false });
       } else {
+        console.log("History loaded (No Data).");
         onHistoryCallback([], { noData: true });
       }
     };
 
     const Datafeed = {
-      onReady: cb => cb({ supported_resolutions: ['1','5','15','30','60','240','D','W'] }),
+      onReady: cb => cb({ supported_resolutions: ['1','5','30','60','240','D','W'] }),
 
      resolveSymbol: (name, cb) => cb({
-  name: name,
-  ticker: name,
-  type: 'crypto',      // ETHUSD ke liye better
-  session: '24x7',
-  timezone: 'Etc/UTC',
-  pricescale: 100,     // ✅ REQUIRED
-  minmov: 1,           // ✅ REQUIRED (warning fix)
-  has_intraday: true,
-  supported_resolutions: ['1','5','15','30','60','240','D','W']
-}),
-
+      name: name,
+      ticker: name,
+      type: 'crypto',
+      session: '24x7',
+      timezone: 'Etc/UTC',
+      pricescale: 100000,
+      minmov: 1,
+      has_intraday: true,
+      
+      // Disable volume to avoid "numbers in red box" discrepancy if user checks volume
+      has_no_volume: true, 
+      
+      supported_resolutions: ['1','5','30','60','240','D','W']
+    }),
 
       getBars: function(symbolInfo, resolution, periodParams, historyCb) {
+        window.currentInterval = resolution;
         onHistoryCallback = historyCb;
         FlutterChannel.postMessage(JSON.stringify({
           type: 'getHistory',
@@ -256,7 +327,7 @@ class TradingViewService {
       }
     };
 
-    new TradingView.widget({
+    window.tvWidget = new TradingView.widget({
       symbol: '$symbol',
       interval: '$interval',
       container: 'tv_chart_container',

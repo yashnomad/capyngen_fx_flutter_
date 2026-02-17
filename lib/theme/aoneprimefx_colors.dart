@@ -1,58 +1,36 @@
 import 'package:flutter/material.dart';
 
-// 🏆 A1 ONE – Premium Trading Color Palette
-class A1OneColors {
-  A1OneColors._();
+class aoneprimefxColors {
+  aoneprimefxColors._();
 
-  // 🌑 Backgrounds
-  static const Color bg = Color(0xFF0F0F0F); // Deep black (main bg)
-  static const Color cardBg = Color(0xFF1A1A1A); // Dark card surface
-  static const Color surface = Color(0xFF141414);
-  static const Color transparent = Colors.transparent;
+  // 🤍 Base
+  static const Color bg = Color(0xFFFFFFFF); // Pure white
+  static const Color surface = Color(0xFFFFFFFF); // Cards
+  static const Color elevated = Color(0xFFFAFAFA); // Slight depth
 
-  // 🟡 Primary Brand (Gold from logo)
-  static const Color primary = Color(0xFFFFC94A); // Rich gold
-  static const Color primarySoft = Color(0xFFFFD776); // Soft gold
-  static const Color primaryDark = Color(0xFFE6B73E); // Muted gold
-
-  // ✨ Accent (Luxury highlight)
-  static const Color accent = Color(0xFFFFE29A);
-
-  // 🌈 Gradients (Used for cards / buttons)
-  static const LinearGradient primaryGradient = LinearGradient(
-    colors: [
-      Color(0xFFFFC94A),
-      Color(0xFFE6B73E),
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  // 🔘 Buttons
-  static const Color button = primary;
-  static const Color buttonText = Color(0xFF0F0F0F); // Black text on gold
-  static const Color disabledButton = Color(0xFF3A3A3A);
+  // 🟡 Luxury Gold (Less Yellow, More Elegant)
+  static const Color primary = Color(0xFFC6A23E); // Premium gold
+  static const Color primaryDark = Color(0xFF9E7B2E); // Rich, deep gold
+  static const Color primarySoft = Color(0xFFE7D28B);
+  static const Color primaryLight = Color(0xFFF4E7C1);
 
   // 📝 Text
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFFB5B5B5);
-  static const Color textMuted = Color(0xFF7A7A7A);
-  static const Color textOnGold = Color(0xFF0F0F0F);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF6E6E73);
+  static const Color textMuted = Color(0xFF9A9A9A);
+  static const Color textOnGold = Colors.white;
 
-  // 🧭 Icons
-  static const Color iconPrimary = primary;
-  static const Color iconSecondary = Color(0xFF9E9E9E);
+  // ➖ Lines
+  static const Color border = Color(0xFFEAEAEA);
+  static const Color divider = Color(0xFFF2F2F2);
 
-  // ➖ Borders / Dividers
-  static const Color border = Color(0xFF2A2A2A);
-  static const Color divider = Color(0xFF242424);
+  // 📈 States (keep subtle)
+  static const Color profit = Color(0xFF2E7D32);
+  static const Color loss = Color(0xFFC62828);
 
-  // 📈 Trading States
-  static const Color profit = Color(0xFF3DDC84); // Green profit
-  static const Color loss = Color(0xFFE85C5C); // Red loss
-  static const Color warning = Color(0xFFFFB020);
-  static const Color info = Color(0xFF4D8DFF);
-
-  // 🌫 Shadows
-  static Color shadow = Colors.black.withOpacity(0.6);
+  static const BoxShadow shadow = BoxShadow(
+    color: Color(0x0D000000),
+    blurRadius: 20,
+    offset: Offset(0, 8),
+  );
 }

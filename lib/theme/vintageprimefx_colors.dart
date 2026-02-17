@@ -4,8 +4,9 @@ class VintagePrimeFxColors {
   VintagePrimeFxColors._();
 
   // 🌑 Backgrounds
-  static const Color bg = Color(0xFF0B0B0B); // deep black
-  static const Color cardBg = Color(0xFF141414); // slightly lighter black
+  // Switched to White to match Light Mode default, ensuring contrast with Black text elements.
+  static const Color bg = Color(0xFFFFFFFF);
+  static const Color cardBg = Color(0xFFFFFFFF);
   static const Color darkBg = Color(0xFF000000);
   static const Color transparent = Colors.transparent;
 
@@ -19,25 +20,33 @@ class VintagePrimeFxColors {
   // 🔘 Buttons
   static const Color button = primary;
   static const Color buttonSecondary = secondary;
-  static const Color buttonText = Color(0xFF000000); // black on gold
+  static const Color buttonText =
+      Color(0xFF000000); // black on gold is high contrast
 
   // 📝 Text
-  static const Color text = Color(0xFFE5E5E5); // soft white
-  static const Color textSecondary = Color(0xFF9CA3AF); // muted gray
+  // Updated to colors that work on the new White background.
+  // Note: If AppFlavorColor.text represents "Text on Background", it should be dark.
+  // If it represents "Text on Primary", it should be dark (since Primary is Gold).
+  static const Color text =
+      Color(0xFF1F2937); // Dark Grey/Black for visibility on White
+  static const Color textSecondary = Color(0xFF6B7280); // Medium Gray
+  static const Color textLight = Color(0xFF9CA3AF);
+  static const Color textDark = Color(0xFF000000);
+
   static const Color headerText = primary;
 
   // 🧩 Icons
   static const Color icon = primary;
-  static const Color iconSecondary = Color(0xFFB0B0B0);
+  static const Color iconSecondary = Color(0xFF9CA3AF);
 
   // 🌫 Shadow
-  static const Color shadow = Color(0x66000000); // deep shadow
+  static const Color shadow = Color(0x1A000000); // Light shadow for white bg
 
   // 🚦 Status
-  static const Color success = Color(0xFF2ECC71); // premium green
-  static const Color error = Color(0xFFE74C3C); // luxury red
+  static const Color success = Color(0xFF2ECC71);
+  static const Color error = Color(0xFFE74C3C);
   static const Color warning = Color(0xFFF1C40F);
-  static const Color info = Color(0xFFD4AF37); // gold info
+  static const Color info = Color(0xFFD4AF37);
 
   // 💹 Trading
   static const Color buyGreen = Color(0xFF2ECC71);

@@ -53,6 +53,16 @@ class TradeCubit extends Cubit<TradeState> {
               .toList();
         }
 
+        // 🔥 FIX: Map existing Live Profit immediately if socket connected faster than API
+        if (state.equity != null) {
+          for (var lp in state.equity!.liveProfit) {
+            final index = trades.indexWhere((t) => t.id == lp.id);
+            if (index != -1) {
+              trades[index] = trades[index].copyWith(currentProfit: lp.profit);
+            }
+          }
+        }
+
         emit(state.copyWith(
           activeTrades: trades,
           isLoading: false,
@@ -68,41 +78,6 @@ class TradeCubit extends Cubit<TradeState> {
     } catch (e) {
       debugPrint("Error fetching trades: $e");
       emit(state.copyWith(isLoading: false));
-    }
-  }
-
-  Future<void> hardRefresh(String accountId) async {
-    emit(state.copyWith(isLoading: true));
-    try {
-      await fetchOpenTrades(accountId);
-      await fetchHistoryTrades(accountId);
-
-      if (state.activeTrades.isEmpty && state.equity != null) {
-        // Prepare "Zeroed" snapshot but PRESERVE Balance
-        // If no trades, Equity = Balance, Free Margin = Balance
-        final currentBalance = state.equity!.balance;
-
-        final zeroEquity = EquitySnapshot(
-          balance: currentBalance,
-          equity: currentBalance,
-          freeMargin: currentBalance,
-          pnl: "0.00",
-          usedMargin: "0.00",
-          userAssets: state.equity!.userAssets,
-          liveProfit: [],
-        );
-        emit(state.copyWith(equity: zeroEquity));
-      }
-
-      emit(state.copyWith(
-        isLoading: false,
-        successMessage: "Trade Refreshed",
-      ));
-    } catch (e) {
-      emit(state.copyWith(
-        isLoading: false,
-        errorMessage: "Refresh Failed: $e",
-      ));
     }
   }
 
@@ -165,8 +140,9 @@ class TradeCubit extends Cubit<TradeState> {
         if (!manualClose) {
           autoCloseMessage = "Trade Closed. PnL: ${trade.profitLossAmount}";
         }
-        if (trade.tradeAccountId != null)
+        if (trade.tradeAccountId != null) {
           fetchHistoryTrades(trade.tradeAccountId!);
+        }
       } else if (status == 'pending') {
         pending.insert(0, trade);
       } else if (status == 'open') {
@@ -192,8 +168,11 @@ class TradeCubit extends Cubit<TradeState> {
       final index = updatedActiveTrades.indexWhere((t) => t.id == lp.id);
       if (index != -1) {
         var trade = updatedActiveTrades[index];
-        updatedActiveTrades[index] = trade.copyWith(currentProfit: lp.profit);
-        changed = true;
+        // 🔥 FIX: Save precise state updates to avoid ghost zeroes
+        if (trade.currentProfit != lp.profit) {
+          updatedActiveTrades[index] = trade.copyWith(currentProfit: lp.profit);
+          changed = true;
+        }
         if (!_processingCloseIds.contains(trade.id)) {
           _checkAndAutoClose(trade, lp);
         }
@@ -285,72 +264,34 @@ class TradeCubit extends Cubit<TradeState> {
       final res = await ApiService.stopTrade({"tradeId": tradeId});
 
       if (res.success) {
-        // List<TradeModel> currentActive = List.from(state.activeTrades);
-        // currentActive.removeWhere((t) => t.id == tradeId);
-
-        // List<TradeModel> currentHistory = List.from(state.historyTrades);
-        // String pnlMessage = "Trade Closed";
-
-        // 1. Refresh History First to get the true final PnL
-        await fetchHistoryTrades(accountId);
-
-        // 2. Find the closed trade in the updated history
-        double finalPnL = 0.0;
-        try {
-          // Look for the trade we just closed in the newly fetched history
-          final historyTrade =
-              state.historyTrades.firstWhere((t) => t.id == tradeId);
-          finalPnL = historyTrade.profitLossAmount ?? 0.0;
-        } catch (_) {
-          // Fallback: Use the response data if not found in history (rare)
-
-          if (res.data != null) {
-            var rawData = res.data;
-            if (rawData is Map<String, dynamic>) {
-              if (rawData.containsKey('trade'))
-                rawData = rawData['trade'];
-              else if (rawData.containsKey('result'))
-                rawData = rawData['result'];
-
-              if (rawData != null && rawData is Map<String, dynamic>) {
-                final closedTrade =
-                    TradeModel.fromJson(rawData as Map<String, dynamic>);
-                finalPnL = closedTrade.profitLossAmount ?? 0.0;
-              }
-            }
-          }
-          if (finalPnL == 0 && lastLivePnL != 0) finalPnL = lastLivePnL;
-          // pnlMessage = "Trade Closed.";
-        }
-        String pnlMessage = "Trade Closed. PnL: ${finalPnL.toStringAsFixed(2)}";
-
-        // 3. Update Active List (Optimistic removal)
         List<TradeModel> currentActive = List.from(state.activeTrades);
         currentActive.removeWhere((t) => t.id == tradeId);
 
-        // 4. Zeroing Logic if needed
-        EquitySnapshot? updatedEquity = state.equity;
-        if (currentActive.isEmpty && state.equity != null) {
-          // Calculate new balance: Old Balance + PnL
-          double oldBalance = double.tryParse(state.equity!.balance) ?? 0.0;
-          double newBalanceVal = oldBalance + finalPnL;
-          String newBalance = newBalanceVal.toStringAsFixed(2);
+        List<TradeModel> currentHistory = List.from(state.historyTrades);
+        String pnlMessage = "Trade Closed";
 
-          updatedEquity = EquitySnapshot(
-            balance: newBalance,
-            equity: newBalance,
-            freeMargin: newBalance,
-            pnl: "0.00",
-            usedMargin: "0.00",
-            userAssets:
-                state.equity!.userAssets, // Keep existing assets structure
-            liveProfit: [],
-          );
+        if (res.data != null) {
+          var rawData = res.data;
+          if (rawData is Map<String, dynamic>) {
+            if (rawData.containsKey('trade')) {
+              rawData = rawData['trade'];
+            } else if (rawData.containsKey('result')) {
+              rawData = rawData['result'];
+            }
+
+            if (rawData != null && rawData is Map<String, dynamic>) {
+              final closedTrade =
+                  TradeModel.fromJson(rawData as Map<String, dynamic>);
+              currentHistory.insert(0, closedTrade);
+              double finalPnL = closedTrade.profitLossAmount ?? 0.0;
+              if (finalPnL == 0 && lastLivePnL != 0) finalPnL = lastLivePnL;
+              pnlMessage = "Trade Closed";
+            }
+          }
         }
-        // 5. Emit Final State with Message
         emit(state.copyWith(
             activeTrades: currentActive,
-            equity: updatedEquity,
+            historyTrades: currentHistory,
             successMessage: pnlMessage));
         fetchHistoryTrades(accountId);
       } else {

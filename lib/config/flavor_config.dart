@@ -99,7 +99,7 @@ class FlavorConfig {
       case Flavor.vintageprimefx:
         return 'VintagePrimeFX';
       case Flavor.aoneprimefx:
-        return 'aoneprimefx';
+        return 'Aone PrimeFX';
       case Flavor.aurelianglobal:
         return 'Aurelian Global';
       default:

@@ -5,14 +5,18 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class PlaceOrderWS {
   PlaceOrderWS._();
+
   static final PlaceOrderWS _instance = PlaceOrderWS._();
+
   static PlaceOrderWS get instance => _instance;
+
   factory PlaceOrderWS() => _instance;
 
   io.Socket? _socket;
+
   bool get isConnected => _socket?.connected ?? false;
 
-  String? _currentUserId; // Add this to store userId
+  String? _currentUserId;
 
   void connect({
     required String jwt,
@@ -23,31 +27,28 @@ class PlaceOrderWS {
     void Function(List<LiveProfit>)? onLiveData,
     void Function(String)? onError,
   }) {
-    _currentUserId = userId; // Store userId
+    _currentUserId = userId;
 
+    // 🔥 FIX: Completely wipe out old connection on restart to avoid Ghost/Zombie sockets
     if (_socket != null) {
-      _socket!.off('equity:value');
-      _socket!.off('trade:update');
-      _socket!.off('trade:new');
-      _socket!.off('error');
+      _socket!.disconnect();
+      _socket!.dispose();
+      _socket = null;
     }
 
-    if (_socket == null || !_socket!.connected) {
-      _socket = io.io(
-        'https://api.capyngen.us',
-        io.OptionBuilder()
-            .setTransports(['websocket'])
-            .enableAutoConnect()
-            .setAuth({'token': jwt})
-            .build(),
-      );
+    _socket = io.io(
+      'https://api.capyngen.us',
+      io.OptionBuilder()
+          .setTransports(['websocket'])
+          .enableAutoConnect()
+          .setAuth({'token': jwt})
+          .build(),
+    );
 
-      _socket!.onConnect((_) {
-        _subscribeToEvents(userId);
-      });
-    } else {
+    _socket!.onConnect((_) {
+      debugPrint('✅ [PlaceOrderWS] Socket Connected Freshly');
       _subscribeToEvents(userId);
-    }
+    });
 
     _socket!.on('equity:value', (data) {
       try {
@@ -85,7 +86,7 @@ class PlaceOrderWS {
     });
 
     _socket!.onDisconnect((reason) {
-      debugPrint('Socket Disconnected: $reason');
+      debugPrint('❌ [PlaceOrderWS] Socket Disconnected: $reason');
     });
   }
 
@@ -97,7 +98,7 @@ class PlaceOrderWS {
 
   void reSubscribe() {
     if (_currentUserId != null && _socket != null && _socket!.connected) {
-      debugPrint('Re-subscribing... $_currentUserId');
+      debugPrint('🔄 Re-subscribing... $_currentUserId');
       _subscribeToEvents(_currentUserId!);
     }
   }

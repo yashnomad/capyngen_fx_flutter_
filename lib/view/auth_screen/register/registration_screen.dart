@@ -1,10 +1,11 @@
 import 'package:exness_clone/core/extensions.dart';
+import 'package:exness_clone/utils/snack_bar.dart';
 import 'package:exness_clone/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../utils/snack_bar.dart';
+import 'package:exness_clone/theme/app_flavor_color.dart';
 import 'bloc/registration_bloc.dart';
 import 'bloc/registration_event.dart';
 import 'bloc/registration_state.dart';
@@ -25,7 +26,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   bool _obscurePassword = true;
 
-  final Color primaryYellow = const Color(0xFFF1C16F);
+  final Color primaryYellow = AppFlavorColor.primary;
   final Color textColor = Colors.black;
   final Color borderColor = Colors.grey.shade300;
 

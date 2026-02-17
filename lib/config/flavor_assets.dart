@@ -132,7 +132,7 @@ class FlavorAssets {
       case Flavor.vintageprimefx:
         return 'VintagePrimeFX';
       case Flavor.aoneprimefx:
-        return 'aoneprimefx';
+        return 'Aone PrimeFX';
       case Flavor.aurelianglobal:
         return 'Aurelian Global';
       default:
@@ -204,7 +204,7 @@ class FlavorAssets {
       case Flavor.aoneprimefx:
         return 'aoneprimefx';
       case Flavor.aurelianglobal:
-        return 'aurelianGlobal';
+        return 'aurelianglobalmarket';
       default:
         return 'defaultApp';
     }

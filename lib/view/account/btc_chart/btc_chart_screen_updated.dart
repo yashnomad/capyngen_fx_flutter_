@@ -70,7 +70,6 @@ class _BTCChartScreenUpdatedState extends State<BTCChartScreenUpdated> {
   final Map<String, String> _intervals = {
     '1': '1m',
     '5': '5m',
-    '15': '15m',
     '30': '30m',
     '60': '1h',
     '240': '4h',
@@ -81,14 +80,10 @@ class _BTCChartScreenUpdatedState extends State<BTCChartScreenUpdated> {
   void _changeInterval(String interval) {
     setState(() {
       _selectedInterval = interval;
-
-      _controller = _chartService.getController(
-        widget.symbolName,
-        interval: _selectedInterval,
-        tradeUserId: widget.tradeUserId,
-        context: context,
-      );
     });
+
+    // ✨ Call the service to update the resolution in JS
+    _chartService.changeInterval(widget.symbolName, interval);
   }
 
   String _formatPrice(double? value,
@@ -430,18 +425,58 @@ class _BTCChartScreenUpdatedState extends State<BTCChartScreenUpdated> {
         child: Column(
           children: [
             // Interval Selector
-            // _buildIntervalSelector(),
+            _buildIntervalSelector(),
 
             // Chart WebView
             Expanded(
               child: RepaintBoundary(
                 child: WebViewWidget(
-                  controller: _controller,
+                  controller: _controller!,
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildIntervalSelector() {
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _intervals.length,
+        itemBuilder: (context, index) {
+          final intervalKey = _intervals.keys.elementAt(index);
+          final intervalLabel = _intervals.values.elementAt(index);
+          final isSelected = _selectedInterval == intervalKey;
+
+          return GestureDetector(
+            onTap: () => _changeInterval(intervalKey),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColor.blueColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected ? AppColor.blueColor : Colors.grey.shade300,
+                ),
+              ),
+              child: Text(
+                intervalLabel,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

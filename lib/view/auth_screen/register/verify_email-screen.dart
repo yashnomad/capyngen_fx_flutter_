@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'package:exness_clone/utils/snack_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:exness_clone/network/api_service.dart';
-import 'package:exness_clone/utils/snack_bar.dart';
+import 'package:exness_clone/theme/app_flavor_color.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String? userId;
@@ -22,7 +23,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   late Animation<double> _fadeAnimation;
 
   // Design Colors (matching your design system)
-  final Color primaryYellow = const Color(0xFFF1C16F);
+  final Color primaryYellow = AppFlavorColor.primary;
   final Color cardBgColor = const Color(0xFFF0EBE3);
   final Color tipBgColor = const Color(0xFFFFF0EB);
   final Color infoBgColor = const Color(0xFFEBF5FF);

@@ -1,6 +1,7 @@
+import 'package:exness_clone/config/flavor_assets.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../config/flavor_assets.dart'; // Add this import
+import 'package:exness_clone/theme/app_flavor_color.dart'; // Add this import
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -76,7 +77,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryYellow = const Color(0xFFFCCF4D);
+    final Color primaryYellow = AppFlavorColor.primary;
     final Color textColor = Colors.black;
 
     return Scaffold(
@@ -160,8 +161,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             context.pushNamed('yourResidence');
                           },
                           style: OutlinedButton.styleFrom(
-                            side:
-                                BorderSide(color: Color(0xFFF1C16F), width: 2),
+                            side: BorderSide(
+                                color: AppFlavorColor.primary, width: 2),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -171,7 +172,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFF1C16F),
+                              color: AppFlavorColor.primary,
                             ),
                           ),
                         ),
@@ -186,7 +187,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             context.pushNamed('login');
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFF1C16F),
+                            backgroundColor: AppFlavorColor.primary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),

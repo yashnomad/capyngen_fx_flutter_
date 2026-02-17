@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 // 🏆 AT7 – Premium Shield Trading Palette (Based on Logo)
-class AT7Colors {
-  AT7Colors._();
+class aurelianglobalColors {
+  aurelianglobalColors._();
 
   // 🌌 Backgrounds (Deep Navy from shield)
   static const Color bg = Color(0xFF0B1C2D); // Main dark navy
