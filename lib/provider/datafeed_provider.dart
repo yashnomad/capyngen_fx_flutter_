@@ -3,6 +3,8 @@ import '../network/api_service.dart';
 import '../services/data_feed_ws.dart';
 import '../services/storage_service.dart';
 
+enum SocketStatus { connecting, connected, disconnected }
+
 class DataFeedProvider extends ChangeNotifier {
   final DataFeedWS _socket = DataFeedWS();
 
@@ -10,9 +12,12 @@ class DataFeedProvider extends ChangeNotifier {
 
   final Set<String> _subscribedSymbols = {};
 
+  SocketStatus _socketStatus = SocketStatus.disconnected;
+
   bool _isConnected = false;
 
   Map<String, LiveProfit> get liveData => _liveData;
+  SocketStatus get socketStatus => _socketStatus;
 
   void connect(String jwt, String tradeUserId) {
     if (tradeUserId.isEmpty) {
@@ -23,11 +28,17 @@ class DataFeedProvider extends ChangeNotifier {
     _socket.connect(
         jwt: jwt,
         tradeUserId: tradeUserId,
+        onConnecting: () {
+          _socketStatus = SocketStatus.connecting;
+          notifyListeners();
+        },
         onConnected: () {
           _isConnected = true;
+          _socketStatus = SocketStatus.connected;
           debugPrint("🔄 Socket connected for user: $tradeUserId $jwt");
 
           resubscribeAll();
+          notifyListeners();
         },
         onLiveData: (profits) {
           for (var p in profits) {
@@ -35,9 +46,16 @@ class DataFeedProvider extends ChangeNotifier {
           }
           notifyListeners();
         },
+        onDisconnect: () {
+          _isConnected = false;
+          _socketStatus = SocketStatus.disconnected;
+          notifyListeners();
+        },
         onError: (err) {
           _isConnected = false;
+          _socketStatus = SocketStatus.disconnected;
           debugPrint("❌ LiveData Socket Error: $err");
+          notifyListeners();
         });
   }
 

@@ -18,8 +18,12 @@ class DataFeedWS {
     required void Function(List<LiveProfit>) onLiveData,
     void Function(String)? onError,
     VoidCallback? onConnected,
+    VoidCallback? onConnecting,
+    VoidCallback? onDisconnect,
   }) {
     if (isConnected) return;
+
+    onConnecting?.call();
 
     _socket = io.io(
       'https://api.capyngen.us',
@@ -97,11 +101,13 @@ class DataFeedWS {
 
     _socket!.onDisconnect((_) {
       // debugPrint('🔌 [Socket] Disconnected');
+      onDisconnect?.call();
     });
 
     _socket!.onError((err) {
       // debugPrint('❌ [Socket Error]: $err');
       onError?.call(err.toString());
+      onDisconnect?.call();
     });
   }
 

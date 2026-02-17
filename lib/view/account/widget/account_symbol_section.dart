@@ -64,6 +64,15 @@ class _AccountSymbolSectionState extends State<AccountSymbolSection>
       if (!mounted) return;
       context.read<SymbolCubit>().getWatchList(userId);
 
+      // Subscribe to existing favorites immediately if present
+      final currentWatchlist = context.read<SymbolCubit>().state.watchlist;
+      if (currentWatchlist.isNotEmpty) {
+        final names = currentWatchlist
+            .map((e) => e.symbolName.toUpperCase().trim())
+            .toList();
+        context.read<DataFeedProvider>().subscribeToSymbols(names);
+      }
+
       final token = StorageService.getToken();
       if (token != null) {
         context.read<DataFeedProvider>().switchAccount(token, userId);
@@ -100,6 +109,63 @@ class _AccountSymbolSectionState extends State<AccountSymbolSection>
                     indicatorWeight: 2,
                     tabs: tabs.map((e) => Tab(text: e)).toList(),
                   ),
+                ),
+
+                // Connection Status Indicator
+                Consumer<DataFeedProvider>(
+                  builder: (context, provider, _) {
+                    final status = provider.socketStatus;
+                    Color color;
+                    String text;
+
+                    switch (status) {
+                      case SocketStatus.connected:
+                        color = Colors.green;
+                        text = "Live";
+                        break;
+                      case SocketStatus.connecting:
+                        color = Colors.orange;
+                        text = "Connecting...";
+                        break;
+                      case SocketStatus.disconnected:
+                        color = Colors.red;
+                        text = "Disconnected";
+                        break;
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            text,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
 
                 /// 🔍 SEARCH BUTTON
@@ -187,8 +253,7 @@ class _AccountSymbolSectionState extends State<AccountSymbolSection>
       //   //   chartService.preloadChart(item.symbolName);
       //   // }
       // },
-      listenWhen: (prev, curr) =>
-          prev.watchlist.length != curr.watchlist.length,
+      listenWhen: (prev, curr) => prev.watchlist != curr.watchlist,
       listener: (context, state) {
         if (state.watchlist.isNotEmpty) {
           final names = state.watchlist

@@ -52,13 +52,11 @@ class _BinancePositionCardState extends State<BinancePositionCard> {
   @override
   Widget build(BuildContext context) {
     final isBuy = (widget.trade.bs ?? 'Buy').toLowerCase() == 'buy';
-    final sideColor =
-        isBuy ? _blueColor : _binanceRed; // Buy is blueish, Sell is red
+    final sideColor = isBuy ? _blueColor : _binanceRed;
 
-    // Profit Logic
     final pnlVal =
         widget.liveProfit.profit ?? widget.trade.profitLossAmount ?? 0.0;
-    final pnlColor = pnlVal >= 0 ? _binanceGreen : _binanceRed; // PNL Green/Red
+    final pnlColor = pnlVal >= 0 ? _binanceGreen : _binanceRed;
     final pnlStr = pnlVal.toStringAsFixed(2);
 
     final lotSize = widget.trade.lot ?? 0.0;
@@ -70,59 +68,68 @@ class _BinancePositionCardState extends State<BinancePositionCard> {
     final slStr =
         widget.trade.sl != null ? widget.trade.sl!.toStringAsFixed(5) : "-";
 
-    // Formatting ID and Time
-    final tradeId = "#${widget.trade.id}"; // Using ID from model
+    final tradeId = "#${widget.trade.id}";
+    // Format date if needed, for now keep string
     final openTime = widget.trade.openedAt ?? "--";
 
     return Column(
       children: [
-        Container(
-          color: widget.cardColor, // Main background
-          child: Column(
-            children: [
-              // COLLAPSED VIEW (Always Visible)
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-                child: Padding(
+        Material(
+          color: widget.cardColor,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Column(
+              children: [
+                // COLLAPSED VIEW (Always Visible)
+                Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 12.0),
+                      horizontal: 16.0, vertical: 14.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Top Row: Symbol, Side, Lot, PNL
+                      // Top Row: Symbol Info & PNL
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "${widget.trade.symbol ?? 'Unknown'}, ",
-                            style: TextStyle(
-                              color: widget.textColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        "${widget.trade.symbol ?? 'Unknown'}, ",
+                                    style: TextStyle(
+                                      color: widget.textColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      fontFamily:
+                                          'Roboto', // Professional font choice if available, or system
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: "${isBuy ? "buy" : "sell"} ",
+                                    style: TextStyle(
+                                      color: sideColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: lotSize.toString(),
+                                    style: TextStyle(
+                                      color: sideColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          Text(
-                            isBuy ? "buy " : "sell ",
-                            style: TextStyle(
-                              color: sideColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                          Text(
-                            lotSize.toString(),
-                            style: TextStyle(
-                              color: sideColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const Spacer(),
                           Text(
                             pnlStr,
                             style: TextStyle(
@@ -133,8 +140,8 @@ class _BinancePositionCardState extends State<BinancePositionCard> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      // Bottom Row: Entry -> Current
+                      const SizedBox(height: 6),
+                      // Bottom Row: Prices
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -153,123 +160,129 @@ class _BinancePositionCardState extends State<BinancePositionCard> {
                                 style: TextStyle(
                                   color: widget.greyText,
                                   fontSize: 13,
+                                  height: 1.2,
                                 ),
                               );
                             },
                           ),
                         ],
                       ),
+
+                      // Progress/Status indicator (Optional simple line or nothing)
                     ],
                   ),
                 ),
-              ),
 
-              // EXPANDED VIEW
-              if (_isExpanded)
-                Container(
-                  width: double.infinity,
-                  color: widget.isDark
-                      ? Colors.black26
-                      : Colors.grey.shade100, // Slightly improved contrast
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ID and Open Time
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            tradeId,
-                            style:
-                                TextStyle(color: widget.greyText, fontSize: 12),
-                          ),
-                          _buildDetailRow("Open:", openTime),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // SL and Swap
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildDetailRow("S / L:", slStr),
-                          _buildDetailRow("Swap:",
-                              "0.00"), // Placeholder/Logic for swap if available
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // TP
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildDetailRow("T / P:", tpStr),
-                          // Placeholder for alignment or other stats
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // ACTIONS: Modify & Delete (Close)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          // Modify Button
-                          TextButton.icon(
-                            onPressed: () => widget.onModify(widget.trade),
-                            style: TextButton.styleFrom(
-                              foregroundColor: widget.greyText,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                            ),
-                            icon: const Icon(Icons.edit, size: 16),
-                            label: const Text("Modify"),
-                          ),
-                          const SizedBox(width: 8),
-                          // Close Button
-                          TextButton.icon(
-                            onPressed: () {
+                // EXPANDED VIEW
+                if (_isExpanded)
+                  Container(
+                    width: double.infinity,
+                    color: widget.isDark
+                        ? Colors.black12
+                        : const Color(0xFFF5F5F5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0), // Reduced vertical padding
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // SL and TP Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildDetailRow("S / L:", slStr),
+                            _buildDetailRow("T / P:", tpStr),
+                          ],
+                        ),
+
+                        const SizedBox(height: 10), // Compact spacing
+
+                        // Actions
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            _buildActionButton(
+                                "Modify",
+                                Icons.edit,
+                                widget.greyText,
+                                () => widget.onModify(widget.trade)),
+                            const SizedBox(width: 16),
+                            _buildActionButton(
+                                "Close", Icons.close, _binanceRed, () {
                               if (widget.activeAccount.id != null) {
                                 widget.onClose(
                                     widget.trade, widget.activeAccount.id!);
                               }
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: _binanceRed,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                            ),
-                            icon: const Icon(Icons.close, size: 16),
-                            label: const Text("Close"),
-                          ),
-                        ],
-                      )
-                    ],
+                            }),
+                          ],
+                        )
+                      ],
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-        Divider(height: 1, color: widget.dividerColor), // Divider between cards
+        Divider(height: 1, color: widget.dividerColor.withOpacity(0.5)),
       ],
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value,
+      {bool alignRight = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment:
+          alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         Text(
           label,
           style: TextStyle(color: widget.greyText, fontSize: 12),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Text(
           value,
-          style: TextStyle(
-              color: widget.greyText,
-              fontSize:
-                  12), // Value same color as label in screenshot? or distinct?
-          // Screenshot shows value darker? Let's use greyText for simplicity or slightly darker if needed.
+          style:
+              TextStyle(color: widget.textColor.withOpacity(0.7), fontSize: 12),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatColumn(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: widget.greyText, fontSize: 11)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: TextStyle(
+                color: widget.textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.normal)),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(
+      String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                  color: color, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
