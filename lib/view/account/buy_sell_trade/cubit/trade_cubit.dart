@@ -14,15 +14,46 @@ class TradeCubit extends Cubit<TradeState> {
   final Set<String> _processingCloseIds = {};
   String? _currentUserId;
 
-  void startSocket({required String jwt, required String userId}) {
-    _currentUserId = userId;
+  final Map<String, double> _lastKnownPnL = {};
+  EquitySnapshot? _lastKnownEquity;
 
-    PlaceOrderWS().connect(
+  Timer? _equityWatchdog;
+  int _watchdogRetryCount = 0;
+  static const int _maxWatchdogRetries = 3;
+
+  String? _lastJwt;
+
+  void startSocket({required String jwt, required String userId}) {
+    if (_currentUserId != null && _currentUserId != userId) {
+      debugPrint('🔄 [TradeCubit] Account switched, clearing cache...');
+      _lastKnownPnL.clear();
+      _lastKnownEquity = null;
+    }
+
+    _currentUserId = userId;
+    _lastJwt = jwt;
+
+    _equityWatchdog?.cancel();
+
+    if (!isClosed) {
+      emit(state.copyWith(connectionStatus: ConnectionStatus.connecting));
+    }
+
+    PlaceOrderWS.instance.ensureConnected(
       jwt: jwt,
       userId: userId,
       onEquity: (equity) {
         if (isClosed) return;
-        emit(state.copyWith(equity: equity));
+
+        _equityWatchdog?.cancel();
+        _watchdogRetryCount = 0;
+
+        _lastKnownEquity = equity;
+
+        emit(state.copyWith(
+          equity: equity,
+          connectionStatus: ConnectionStatus.live,
+        ));
         _updateActiveTradesPnL(equity.liveProfit);
       },
       onTradeUpdate: (data) {
@@ -33,8 +64,49 @@ class TradeCubit extends Cubit<TradeState> {
       },
       onError: (msg) {
         debugPrint("🔴 [TradeCubit] Socket Error: $msg");
+        if (!isClosed) {
+          emit(state.copyWith(connectionStatus: ConnectionStatus.disconnected));
+        }
+      },
+      onDisconnect: () {
+        if (!isClosed) {
+          emit(state.copyWith(connectionStatus: ConnectionStatus.disconnected));
+        }
       },
     );
+
+    _startWatchdog(jwt: jwt, userId: userId);
+  }
+
+  void _startWatchdog({required String jwt, required String userId}) {
+    _equityWatchdog?.cancel();
+    _equityWatchdog = Timer(const Duration(seconds: 8), () {
+      if (isClosed) return;
+
+      if (!PlaceOrderWS.instance.isConnected) {
+        if (_watchdogRetryCount < _maxWatchdogRetries) {
+          _watchdogRetryCount++;
+          debugPrint(
+              '⏰ [Watchdog] No connection after 8s, attempt $_watchdogRetryCount/$_maxWatchdogRetries');
+
+          if (!isClosed) {
+            emit(state.copyWith(connectionStatus: ConnectionStatus.connecting));
+          }
+
+          PlaceOrderWS.instance.dispose();
+          startSocket(jwt: jwt, userId: userId);
+        } else {
+          debugPrint(
+              '❌ [Watchdog] Max retries reached, giving up auto-reconnect');
+          if (!isClosed) {
+            emit(state.copyWith(
+                connectionStatus: ConnectionStatus.disconnected));
+          }
+        }
+      } else {
+        debugPrint('✅ [Watchdog] Socket connected, all good');
+      }
+    });
   }
 
   Future<void> fetchOpenTrades(String accountId) async {
@@ -53,19 +125,52 @@ class TradeCubit extends Cubit<TradeState> {
               .toList();
         }
 
-        // 🔥 FIX: Map existing Live Profit immediately if socket connected faster than API
-        if (state.equity != null) {
-          for (var lp in state.equity!.liveProfit) {
-            final index = trades.indexWhere((t) => t.id == lp.id);
-            if (index != -1) {
-              trades[index] = trades[index].copyWith(currentProfit: lp.profit);
-            }
+        final Map<String, double> previousPnL = {};
+        for (final t in state.activeTrades) {
+          if (t.id != null && (t.currentProfit ?? 0) != 0) {
+            previousPnL[t.id!] = t.currentProfit!;
           }
         }
 
+        for (int i = 0; i < trades.length; i++) {
+          final trade = trades[i];
+          double? bestProfit;
+
+          if (state.equity != null) {
+            try {
+              final lp = state.equity!.liveProfit.firstWhere(
+                (element) => element.id == trade.id,
+              );
+              if (lp.profit != null && lp.profit != 0) {
+                bestProfit = lp.profit;
+              }
+            } catch (_) {}
+          }
+
+          if (bestProfit == null || bestProfit == 0) {
+            bestProfit = previousPnL[trade.id];
+          }
+
+          if (bestProfit == null || bestProfit == 0) {
+            bestProfit = _lastKnownPnL[trade.id];
+          }
+
+          if (bestProfit != null && bestProfit != 0) {
+            trades[i] = trade.copyWith(currentProfit: bestProfit);
+          }
+        }
+
+        final activeTradeIds = trades.map((t) => t.id).toSet();
+        _lastKnownPnL.removeWhere((id, _) => !activeTradeIds.contains(id));
+
+        List<TradeModel> cleanedPending = List.from(state.pendingTrades);
+        cleanedPending.removeWhere((t) => activeTradeIds.contains(t.id));
+
         emit(state.copyWith(
           activeTrades: trades,
+          pendingTrades: cleanedPending,
           isLoading: false,
+          equity: state.equity ?? _lastKnownEquity,
         ));
 
         if (trades.length == 1) {
@@ -103,10 +208,8 @@ class TradeCubit extends Cubit<TradeState> {
 
       if (res.success) {
         debugPrint("✅ Trade Placed! Refreshing list...");
-
         emit(state.copyWith(
             successMessage: res.message ?? "Trade Placed", isLoading: false));
-
         await fetchOpenTrades(payload.tradeAccountId);
       } else {
         emit(state.copyWith(
@@ -135,6 +238,7 @@ class TradeCubit extends Cubit<TradeState> {
       if (status == 'close') {
         bool manualClose = _processingCloseIds.contains(trade.id);
         _processingCloseIds.remove(trade.id);
+        _lastKnownPnL.remove(trade.id);
         history.insert(0, trade);
 
         if (!manualClose) {
@@ -146,6 +250,9 @@ class TradeCubit extends Cubit<TradeState> {
       } else if (status == 'pending') {
         pending.insert(0, trade);
       } else if (status == 'open') {
+        if (trade.id != null && _lastKnownPnL.containsKey(trade.id)) {
+          trade = trade.copyWith(currentProfit: _lastKnownPnL[trade.id]);
+        }
         active.insert(0, trade);
       }
 
@@ -165,10 +272,13 @@ class TradeCubit extends Cubit<TradeState> {
     bool changed = false;
 
     for (var lp in liveProfits) {
+      if (lp.id != null && lp.profit != null) {
+        _lastKnownPnL[lp.id!] = lp.profit!;
+      }
+
       final index = updatedActiveTrades.indexWhere((t) => t.id == lp.id);
       if (index != -1) {
         var trade = updatedActiveTrades[index];
-        // 🔥 FIX: Save precise state updates to avoid ghost zeroes
         if (trade.currentProfit != lp.profit) {
           updatedActiveTrades[index] = trade.copyWith(currentProfit: lp.profit);
           changed = true;
@@ -261,6 +371,12 @@ class TradeCubit extends Cubit<TradeState> {
         lastLivePnL = existingTrade.currentProfit ?? 0.0;
       } catch (_) {}
 
+      if (lastLivePnL == 0.0) {
+        lastLivePnL = _lastKnownPnL[tradeId] ?? 0.0;
+      }
+
+      _lastKnownPnL.remove(tradeId);
+
       final res = await ApiService.stopTrade({"tradeId": tradeId});
 
       if (res.success) {
@@ -285,7 +401,7 @@ class TradeCubit extends Cubit<TradeState> {
               currentHistory.insert(0, closedTrade);
               double finalPnL = closedTrade.profitLossAmount ?? 0.0;
               if (finalPnL == 0 && lastLivePnL != 0) finalPnL = lastLivePnL;
-              pnlMessage = "Trade Closed";
+              pnlMessage = "Trade Closed.";
             }
           }
         }
@@ -304,9 +420,11 @@ class TradeCubit extends Cubit<TradeState> {
     }
   }
 
-  void reset() {
-    _processingCloseIds.clear();
-    _currentUserId = null;
-    emit(const TradeState());
+  @override
+  Future<void> close() {
+    _equityWatchdog?.cancel();
+    _lastKnownPnL.clear();
+    _lastKnownEquity = null;
+    return super.close();
   }
 }

@@ -2,6 +2,12 @@ import 'package:equatable/equatable.dart';
 import '../model/trade_model.dart';
 import '../model/ws_equity_data.dart';
 
+enum ConnectionStatus {
+  disconnected,
+  connecting,
+  live,
+}
+
 class TradeState extends Equatable {
   final List<TradeModel> activeTrades;
   final List<TradeModel> pendingTrades;
@@ -10,6 +16,7 @@ class TradeState extends Equatable {
   final bool isLoading;
   final String? errorMessage;
   final String? successMessage;
+  final ConnectionStatus connectionStatus;
 
   const TradeState({
     this.activeTrades = const [],
@@ -19,6 +26,7 @@ class TradeState extends Equatable {
     this.isLoading = false,
     this.errorMessage,
     this.successMessage,
+    this.connectionStatus = ConnectionStatus.disconnected,
   });
 
   TradeState copyWith({
@@ -29,6 +37,7 @@ class TradeState extends Equatable {
     bool? isLoading,
     String? errorMessage,
     String? successMessage,
+    ConnectionStatus? connectionStatus,
   }) {
     return TradeState(
       activeTrades: activeTrades ?? this.activeTrades,
@@ -38,6 +47,7 @@ class TradeState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       successMessage: successMessage,
+      connectionStatus: connectionStatus ?? this.connectionStatus,
     );
   }
 
@@ -49,6 +59,7 @@ class TradeState extends Equatable {
         equity,
         isLoading,
         errorMessage,
-        successMessage
+        successMessage,
+        connectionStatus,
       ];
 }

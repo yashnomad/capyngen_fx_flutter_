@@ -54,9 +54,9 @@ class WebSocketService with ChangeNotifier {
           IO.OptionBuilder()
               .setTransports(['websocket', 'polling'])
               .setAuth({'token': token})
-              // .setReconnection(true)
-              .setReconnectionAttempts(_maxReconnectAttempts)
-              .setReconnectionDelay(3000)
+              .enableAutoConnect()
+              .setReconnectionAttempts(double.infinity)
+              .setReconnectionDelay(1000)
               .setTimeout(10000)
               .build());
 

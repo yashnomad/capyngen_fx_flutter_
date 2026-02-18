@@ -26,6 +26,8 @@ class AppSocket {
           .setTransports(['websocket'])
           .setAuth({'token': jwt})
           .enableAutoConnect()
+          .setReconnectionAttempts(double.infinity)
+          .setReconnectionDelay(1000)
           .build(),
     );
 

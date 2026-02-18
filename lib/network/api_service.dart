@@ -229,7 +229,7 @@ class ApiService {
     try {
       // context.read<DataFeedProvider>().reset();
       context.read<DataFeedProvider>().reset();
-      context.read<TradeCubit>().reset();
+      // context.read<TradeCubit>().reset();
       AppSocket().disconnect();
 
       // 2. Clear auth token

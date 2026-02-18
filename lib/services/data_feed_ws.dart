@@ -31,6 +31,8 @@ class DataFeedWS {
           .setTransports(['websocket'])
           .enableAutoConnect()
           .setAuth({'token': jwt})
+          .setReconnectionAttempts(double.infinity)
+          .setReconnectionDelay(1000)
           .build(),
     );
 

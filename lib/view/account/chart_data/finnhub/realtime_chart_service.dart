@@ -15,8 +15,10 @@ class RealtimeChartService {
   WebSocketChannel? _channel;
 
   // Streams for real-time data
-  final StreamController<double> _priceController = StreamController<double>.broadcast();
-  final StreamController<List<CandleData>> _candleController = StreamController<List<CandleData>>.broadcast();
+  final StreamController<double> _priceController =
+      StreamController<double>.broadcast();
+  final StreamController<List<CandleData>> _candleController =
+      StreamController<List<CandleData>>.broadcast();
 
   Stream<double> get priceStream => _priceController.stream;
   Stream<List<CandleData>> get candleStream => _candleController.stream;
@@ -45,7 +47,7 @@ class RealtimeChartService {
       }));
 
       _channel!.stream.listen(
-            (data) => _handleWebSocketMessage(data),
+        (data) => _handleWebSocketMessage(data),
         onError: (error) => print('WebSocket error: $error'),
         onDone: () => _reconnectWebSocket(),
       );
@@ -55,7 +57,6 @@ class RealtimeChartService {
 
       // Start candle update timer (simulate real-time candles)
       _startCandleTimer();
-
     } catch (e) {
       print('Failed to connect WebSocket: $e');
     }
@@ -212,7 +213,7 @@ class RealtimeChartService {
 
   void _reconnectWebSocket() {
     if (_currentSymbol != null) {
-      Timer(const Duration(seconds: 5), () {
+      Timer(const Duration(seconds: 1), () {
         connectWebSocket(_currentSymbol!);
       });
     }

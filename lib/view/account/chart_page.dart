@@ -71,7 +71,6 @@ class _ChartPageState extends State<ChartPage> {
             interval: interval,
             tradeUserId: tradeUserId,
             context: context,
-            isDarkMode: Theme.of(context).brightness == Brightness.dark,
           );
         });
       }

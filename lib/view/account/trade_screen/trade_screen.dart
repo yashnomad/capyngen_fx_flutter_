@@ -7,7 +7,6 @@ import 'package:exness_clone/utils/snack_bar.dart';
 import 'package:exness_clone/view/account/buy_sell_trade/model/ws_equity_data.dart'
     as eq_data;
 import 'package:exness_clone/view/account/trade_screen/widget/modify_trade.dart';
-import 'package:exness_clone/view/account/trade_screen/widget/binance_position_card.dart';
 import 'package:exness_clone/widget/button/premium_app_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +37,8 @@ class _TradeScreenState extends State<TradeScreen>
   late TabController _tabController;
   final int _tabIndex = 3;
   String? _lastFetchedAccountId;
+
+  final Set<String> _expandedPositions = {};
 
   final Color _bgDark = const Color(0xFF161A1E);
   final Color _cardDark = const Color(0xFF1E2329);
@@ -73,8 +74,26 @@ class _TradeScreenState extends State<TradeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      debugPrint('📱 App resumed — reconnecting...');
+
       if (_lastFetchedAccountId != null) {
-        _fetchDataForAccount(_lastFetchedAccountId!, forceRefresh: true);
+        final jwt = StorageService.getToken();
+
+        if (jwt != null) {
+          context.read<TradeCubit>().startSocket(
+                jwt: jwt,
+                userId: _lastFetchedAccountId!,
+              );
+        }
+
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            context.read<TradeCubit>().fetchOpenTrades(_lastFetchedAccountId!);
+            context
+                .read<TradeCubit>()
+                .fetchHistoryTrades(_lastFetchedAccountId!);
+          }
+        });
       }
     }
   }
@@ -109,6 +128,98 @@ class _TradeScreenState extends State<TradeScreen>
     } catch (e) {
       SnackBarService.showError("Failed to generate PDF");
     }
+  }
+
+  void _toggleExpanded(String? tradeId) {
+    if (tradeId == null) return;
+    setState(() {
+      if (_expandedPositions.contains(tradeId)) {
+        _expandedPositions.remove(tradeId);
+      } else {
+        _expandedPositions.add(tradeId);
+      }
+    });
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ✅ ANIMATED CONNECTION STATUS BADGE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Widget _buildConnectionBadge(ConnectionStatus status, bool isDark) {
+    Color dotColor;
+    Color bgColor;
+    Color textColor;
+    String label;
+    bool shouldPulse;
+
+    switch (status) {
+      case ConnectionStatus.live:
+        dotColor = _binanceGreen;
+        bgColor = _binanceGreen.withOpacity(0.12);
+        textColor = _binanceGreen;
+        label = "Live";
+        shouldPulse = false;
+        break;
+      case ConnectionStatus.connecting:
+        dotColor = Colors.amber;
+        bgColor = Colors.amber.withOpacity(0.12);
+        textColor = Colors.amber;
+        label = "Connecting";
+        shouldPulse = true;
+        break;
+      case ConnectionStatus.disconnected:
+        dotColor = _binanceRed;
+        bgColor = _binanceRed.withOpacity(0.12);
+        textColor = _binanceRed;
+        label = "Disconnected";
+        shouldPulse = false;
+        break;
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.3),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        key: ValueKey(status),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: dotColor.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _AnimatedDot(
+              color: dotColor,
+              shouldPulse: shouldPulse,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -166,50 +277,75 @@ class _TradeScreenState extends State<TradeScreen>
                               color: bgColor,
                               child: Row(
                                 children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Positions',
-                                        style: TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w800,
-                                          color: textColor,
-                                          letterSpacing: -0.5,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Positions',
+                                          style: TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w800,
+                                            color: textColor,
+                                            letterSpacing: -0.5,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: AppFlavorColor.primary
-                                              .withOpacity(0.15),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                              color: AppFlavorColor.primary
-                                                  .withOpacity(0.3)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                        const SizedBox(height: 8),
+                                        Row(
                                           children: [
-                                            Icon(Icons.account_balance_wallet,
-                                                size: 12,
-                                                color: AppFlavorColor.primary),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              "Acc #${activeAccount.accountId}",
-                                              style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: AppFlavorColor.primary,
-                                                  fontWeight: FontWeight.w600),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: AppFlavorColor.primary
+                                                    .withOpacity(0.15),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                    color: AppFlavorColor
+                                                        .primary
+                                                        .withOpacity(0.3)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                      Icons
+                                                          .account_balance_wallet,
+                                                      size: 12,
+                                                      color: AppFlavorColor
+                                                          .primary),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    "Acc #${activeAccount.accountId}",
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: AppFlavorColor
+                                                            .primary,
+                                                        fontWeight:
+                                                            FontWeight.w600),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            BlocBuilder<TradeCubit, TradeState>(
+                                              buildWhen: (prev, curr) =>
+                                                  prev.connectionStatus !=
+                                                  curr.connectionStatus,
+                                              builder: (context, state) {
+                                                return _buildConnectionBadge(
+                                                    state.connectionStatus,
+                                                    isDark);
+                                              },
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -262,6 +398,7 @@ class _TradeScreenState extends State<TradeScreen>
                   body: TabBarView(
                     controller: _tabController,
                     children: [
+                      // ─── ACTIVE TAB ───
                       BlocBuilder<TradeCubit, TradeState>(
                         buildWhen: (previous, current) =>
                             previous.activeTrades != current.activeTrades ||
@@ -269,90 +406,65 @@ class _TradeScreenState extends State<TradeScreen>
                         builder: (context, state) {
                           final hasActiveTrades = state.activeTrades.isNotEmpty;
 
-                          return Column(
-                            children: [
-// Header removed
-                              if (hasActiveTrades) const SizedBox(height: 8),
-                              Expanded(
-                                child: !hasActiveTrades
-                                    ? _buildNoOrderUI(
-                                        context,
-                                        'No Open Positions',
-                                        isDark,
-                                        cardColor,
-                                        greyText)
-                                    : RefreshIndicator(
-                                        color: AppFlavorColor.primary,
-                                        backgroundColor: cardColor,
-                                        onRefresh: () async {
-                                          if (activeAccount.id != null) {
-                                            _fetchDataForAccount(
-                                                activeAccount.id!,
-                                                forceRefresh: true);
-                                            await Future.delayed(const Duration(
-                                                milliseconds: 500));
-                                          }
-                                        },
-                                        child: ListView.separated(
-                                          physics:
-                                              const AlwaysScrollableScrollPhysics(),
-                                          padding: const EdgeInsets.all(16),
-                                          itemCount: state.activeTrades.length,
-                                          separatorBuilder: (_, __) =>
-                                              const SizedBox(height: 16),
-                                          itemBuilder: (context, index) {
-                                            final trade =
-                                                state.activeTrades[index];
+                          if (!hasActiveTrades) {
+                            return _buildNoOrderUI(context, 'No Open Positions',
+                                isDark, cardColor, greyText);
+                          }
 
-                                            final liveProfit = state
-                                                    .equity?.liveProfit
-                                                    .firstWhere(
-                                                  (element) =>
-                                                      element.id == trade.id,
-                                                  orElse: () =>
-                                                      eq_data.LiveProfit(
-                                                    id: trade.id,
-                                                    profit: trade
-                                                            .profitLossAmount ??
-                                                        0.0,
-                                                    avg: trade.avg,
-                                                  ),
-                                                ) ??
-                                                eq_data.LiveProfit(
-                                                    id: trade.id,
-                                                    profit: trade
-                                                            .currentProfit ??
-                                                        trade
-                                                            .profitLossAmount ??
-                                                        0.0);
+                          return RefreshIndicator(
+                            color: AppFlavorColor.primary,
+                            backgroundColor: cardColor,
+                            onRefresh: () async {
+                              if (activeAccount.id != null) {
+                                _fetchDataForAccount(activeAccount.id!,
+                                    forceRefresh: true);
+                                await Future.delayed(
+                                    const Duration(milliseconds: 500));
+                              }
+                            },
+                            child: ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              itemCount: state.activeTrades.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 16),
+                              itemBuilder: (context, index) {
+                                final trade = state.activeTrades[index];
 
-                                            return BinancePositionCard(
-                                              trade: trade,
-                                              liveProfit: liveProfit,
-                                              activeAccount: activeAccount,
-                                              cardColor: cardColor,
-                                              textColor: textColor,
-                                              greyText: greyText,
-                                              dividerColor: dividerColor,
-                                              isDark: isDark,
-                                              onModify: (t) =>
-                                                  _showModifyBottomSheet(
-                                                      context,
-                                                      t,
-                                                      cardColor,
-                                                      textColor),
-                                              onClose: (t, accountId) => context
-                                                  .read<TradeCubit>()
-                                                  .closeTrade(t.id, accountId),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                              ),
-                            ],
+                                final liveProfit =
+                                    state.equity?.liveProfit.firstWhere(
+                                          (element) => element.id == trade.id,
+                                          orElse: () => eq_data.LiveProfit(
+                                            id: trade.id,
+                                            profit: trade.currentProfit ??
+                                                trade.profitLossAmount ??
+                                                0.0,
+                                            avg: trade.avg,
+                                          ),
+                                        ) ??
+                                        eq_data.LiveProfit(
+                                            id: trade.id,
+                                            profit: trade.currentProfit ??
+                                                trade.profitLossAmount ??
+                                                0.0);
+
+                                return _buildCollapsiblePositionCard(
+                                    context,
+                                    state,
+                                    trade,
+                                    liveProfit,
+                                    activeAccount,
+                                    cardColor,
+                                    textColor,
+                                    greyText,
+                                    dividerColor,
+                                    isDark);
+                              },
+                            ),
                           );
                         },
                       ),
+                      // ─── PENDING TAB ───
                       BlocBuilder<TradeCubit, TradeState>(
                           buildWhen: (previous, current) =>
                               previous.pendingTrades != current.pendingTrades,
@@ -397,6 +509,7 @@ class _TradeScreenState extends State<TradeScreen>
                               ),
                             );
                           }),
+                      // ─── HISTORY TAB ───
                       BlocBuilder<TradeCubit, TradeState>(
                         buildWhen: (previous, current) =>
                             previous.historyTrades != current.historyTrades,
@@ -584,7 +697,241 @@ class _TradeScreenState extends State<TradeScreen>
     );
   }
 
-// ... method removed ...}
+  Widget _buildCollapsiblePositionCard(
+      BuildContext context,
+      TradeState state,
+      TradeModel trade,
+      eq_data.LiveProfit liveProfit,
+      Account activeAccount,
+      Color cardColor,
+      Color textColor,
+      Color greyText,
+      Color dividerColor,
+      bool isDark) {
+    final isBuy = (trade.bs ?? 'Buy').toLowerCase() == 'buy';
+    final sideColor = isBuy ? _binanceGreen : _binanceRed;
+
+    final bool isConnecting = state.equity == null;
+
+    final pnlVal = liveProfit.profit ??
+        trade.currentProfit ??
+        trade.profitLossAmount ??
+        0.0;
+
+    final bool showDashes = isConnecting &&
+        trade.currentProfit == null &&
+        (trade.profitLossAmount == null || trade.profitLossAmount == 0.0);
+
+    final pnlColor =
+        showDashes ? greyText : (pnlVal >= 0 ? _binanceGreen : _binanceRed);
+    final pnlStr = showDashes
+        ? "--"
+        : "${pnlVal >= 0 ? '+' : ''}${pnlVal.toStringAsFixed(2)}";
+
+    const leverage = 20;
+    final lotSize = trade.lot ?? 0.0;
+    final entryPrice = trade.avg ?? 0.0;
+    final marginCalc = (lotSize * entryPrice) / leverage;
+
+    final tpStr =
+        trade.target != null ? trade.target!.toStringAsFixed(2) : "--";
+    final slStr = trade.sl != null ? trade.sl!.toStringAsFixed(2) : "--";
+
+    final String tradeKey = trade.id ?? trade.hashCode.toString();
+    final bool isExpanded = _expandedPositions.contains(tradeKey);
+
+    return GestureDetector(
+      onTap: () => _toggleExpanded(tradeKey),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: isExpanded
+              ? Border.all(color: sideColor.withOpacity(0.3), width: 1)
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: sideColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(4)),
+                  child: Text(isBuy ? "B" : "S",
+                      style: TextStyle(
+                          color: sideColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12)),
+                ),
+                const SizedBox(width: 8),
+                Text(trade.symbol ?? "Unknown",
+                    style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4)),
+                  child: Text("${leverage}x",
+                      style: TextStyle(color: greyText, fontSize: 11)),
+                ),
+                const SizedBox(width: 12),
+                Text(pnlStr,
+                    style: TextStyle(
+                        color: pnlColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold)),
+                const Spacer(),
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Icon(Icons.keyboard_arrow_down_rounded,
+                      color: greyText, size: 22),
+                ),
+              ],
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: _buildExpandedContent(
+                context,
+                state,
+                trade,
+                liveProfit,
+                activeAccount,
+                isBuy,
+                sideColor,
+                pnlStr,
+                pnlColor,
+                lotSize,
+                entryPrice,
+                marginCalc,
+                tpStr,
+                slStr,
+                leverage,
+                cardColor,
+                textColor,
+                greyText,
+                dividerColor,
+                isDark,
+              ),
+              crossFadeState: isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+              sizeCurve: Curves.easeInOut,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedContent(
+    BuildContext context,
+    TradeState state,
+    TradeModel trade,
+    eq_data.LiveProfit liveProfit,
+    Account activeAccount,
+    bool isBuy,
+    Color sideColor,
+    String pnlStr,
+    Color pnlColor,
+    double lotSize,
+    double entryPrice,
+    double marginCalc,
+    String tpStr,
+    String slStr,
+    int leverage,
+    Color cardColor,
+    Color textColor,
+    Color greyText,
+    Color dividerColor,
+    bool isDark,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Divider(color: dividerColor, height: 1),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Unrealized PNL (USDT)",
+                    style: TextStyle(color: greyText, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(pnlStr,
+                    style: TextStyle(
+                        color: pnlColor,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+            _buildGridStat("TP / SL", "$tpStr / $slStr", textColor, greyText),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildGridStat("Size", lotSize.toString(), textColor, greyText),
+            _buildGridStat(
+                "Margin", marginCalc.toStringAsFixed(2), textColor, greyText),
+            _buildGridStat("Entry Price", entryPrice.toStringAsFixed(2),
+                textColor, greyText),
+            Selector<DataFeedProvider, feed_ws.LiveProfit?>(
+              selector: (_, provider) =>
+                  provider.liveData[trade.symbol] ??
+                  provider.liveData[(trade.symbol ?? "").toUpperCase()],
+              builder: (context, liveData, _) {
+                final currentLivePrice = isBuy
+                    ? (liveData?.bid ?? entryPrice)
+                    : (liveData?.ask ?? entryPrice);
+                return _buildGridStat("Mark Price",
+                    currentLivePrice.toStringAsFixed(2), textColor, greyText,
+                    crossAlign: CrossAxisAlignment.end);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+                child: _buildActionButton("TP/SL", greyText, dividerColor,
+                    onTap: () => _showModifyBottomSheet(
+                        context, trade, cardColor, textColor))),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _buildActionButton(
+                    "Close Position", textColor, dividerColor,
+                    bgColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                    onTap: () async {
+              if (activeAccount.id != null) {
+                await context
+                    .read<TradeCubit>()
+                    .closeTrade(trade.id, activeAccount.id!);
+              }
+            })),
+          ],
+        ),
+      ],
+    );
+  }
 
   Widget _buildCustomPendingCard(
       BuildContext context,
@@ -736,7 +1083,7 @@ class _TradeScreenState extends State<TradeScreen>
       onTap: onTap,
       child: Container(
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
             color: bgColor ?? Colors.transparent,
             border: Border.all(
@@ -818,6 +1165,89 @@ class _TradeScreenState extends State<TradeScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ✅ PULSATING DOT WIDGET
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+class _AnimatedDot extends StatefulWidget {
+  final Color color;
+  final bool shouldPulse;
+
+  const _AnimatedDot({
+    required this.color,
+    required this.shouldPulse,
+  });
+
+  @override
+  State<_AnimatedDot> createState() => _AnimatedDotState();
+}
+
+class _AnimatedDotState extends State<_AnimatedDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    if (widget.shouldPulse) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedDot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.shouldPulse && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.shouldPulse && _controller.isAnimating) {
+      _controller.stop();
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.color.withOpacity(
+              widget.shouldPulse ? _animation.value : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(
+                  widget.shouldPulse ? _animation.value * 0.5 : 0.3,
+                ),
+                blurRadius: widget.shouldPulse ? 6 : 3,
+                spreadRadius: widget.shouldPulse ? 1 : 0,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
