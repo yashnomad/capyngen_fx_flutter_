@@ -92,3 +92,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+// Copyright (c) 2026. All rights reserved.
