@@ -2,7 +2,7 @@ name: exness_clone
 description: Multi-flavor trading application
 
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.8.9+9
 
 environment:
   sdk: ^3.6.0

@@ -140,8 +140,8 @@ android {
         enzo4ex {
             dimension "app"
             applicationId "com.enzo4ex.trading"
-            versionCode 6
-            versionName "1.6.0"
+            versionCode 8
+            versionName "1.9.0"
             versionNameSuffix "-enzo4ex"
             resValue "string", "app_name", "Enzo4Ex"
             buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'

@@ -23,6 +23,33 @@ class TradeCubit extends Cubit<TradeState> {
 
   String? _lastJwt;
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ✅ NEW: Called from didChangeAppLifecycleState on resume
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  void reconnect({
+    required String jwt,
+    required String userId,
+    bool forceNew = false,
+  }) {
+    if (forceNew) {
+      debugPrint('🔌 [TradeCubit] Force reconnect — disposing old socket');
+
+      _equityWatchdog?.cancel();
+      _watchdogRetryCount = 0;
+
+      PlaceOrderWS.instance.dispose();
+
+      if (!isClosed) {
+        emit(state.copyWith(
+          connectionStatus: ConnectionStatus.connecting,
+          clearEquity: true,
+        ));
+      }
+    }
+
+    startSocket(jwt: jwt, userId: userId);
+  }
+
   void startSocket({required String jwt, required String userId}) {
     if (_currentUserId != null && _currentUserId != userId) {
       debugPrint('🔄 [TradeCubit] Account switched, clearing cache...');

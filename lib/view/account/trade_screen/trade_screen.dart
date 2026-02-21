@@ -40,6 +40,10 @@ class _TradeScreenState extends State<TradeScreen>
 
   final Set<String> _expandedPositions = {};
 
+  // ✅ NEW: Track when app went to background
+  DateTime? _pausedAt;
+  static const _staleThreshold = Duration(seconds: 30);
+
   final Color _bgDark = const Color(0xFF161A1E);
   final Color _cardDark = const Color(0xFF1E2329);
   final Color _textGreyDark = const Color(0xFF848E9C);
@@ -73,20 +77,42 @@ class _TradeScreenState extends State<TradeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // ✅ Track when app goes to background
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _pausedAt = DateTime.now();
+      debugPrint('⏸️ App paused at $_pausedAt');
+      return;
+    }
+
     if (state == AppLifecycleState.resumed) {
-      debugPrint('📱 App resumed — reconnecting...');
+      final wasPausedFor = _pausedAt != null
+          ? DateTime.now().difference(_pausedAt!)
+          : Duration.zero;
+
+      final isStale = wasPausedFor > _staleThreshold;
+
+      debugPrint(
+        '📱 App resumed — paused for ${wasPausedFor.inSeconds}s '
+        '(stale: $isStale)',
+      );
+
+      _pausedAt = null;
 
       if (_lastFetchedAccountId != null) {
         final jwt = StorageService.getToken();
 
         if (jwt != null) {
-          context.read<TradeCubit>().startSocket(
+          // ✅ Force full reconnect if socket is likely dead
+          context.read<TradeCubit>().reconnect(
                 jwt: jwt,
                 userId: _lastFetchedAccountId!,
+                forceNew: isStale,
               );
         }
 
-        Future.delayed(const Duration(milliseconds: 500), () {
+        // ✅ Always refetch trades on resume
+        Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
             context.read<TradeCubit>().fetchOpenTrades(_lastFetchedAccountId!);
             context
@@ -387,7 +413,7 @@ class _TradeScreenState extends State<TradeScreen>
                           labelPadding:
                               const EdgeInsets.symmetric(horizontal: 12),
                           tabs: const [
-                            Tab(text: "Active"),
+                            Tab(text: "Positions"),
                             Tab(text: "Pending"),
                             Tab(text: "History"),
                           ],
@@ -424,10 +450,10 @@ class _TradeScreenState extends State<TradeScreen>
                             },
                             child: ListView.separated(
                               physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.zero,
                               itemCount: state.activeTrades.length,
                               separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 16),
+                                  Divider(height: 1, color: dividerColor),
                               itemBuilder: (context, index) {
                                 final trade = state.activeTrades[index];
 
@@ -655,7 +681,7 @@ class _TradeScreenState extends State<TradeScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildTopCardStat(
-                  "Unrealized PNL (USD)", pnlDisplay, pnlColor, greyText,
+                  "Total PNL (USD)", pnlDisplay, pnlColor, greyText,
                   isLarge: true),
               _buildTopCardStat("Equity", equity, textColor, greyText,
                   isLarge: true, alignRight: true),
@@ -708,8 +734,9 @@ class _TradeScreenState extends State<TradeScreen>
       Color greyText,
       Color dividerColor,
       bool isDark) {
+    // ✅ Change Green to Blue (#2277E6) for "Buy" and Positive PnL
     final isBuy = (trade.bs ?? 'Buy').toLowerCase() == 'buy';
-    final sideColor = isBuy ? _binanceGreen : _binanceRed;
+    final sideColor = isBuy ? const Color(0xFF2277E6) : _binanceRed;
 
     final bool isConnecting = state.equity == null;
 
@@ -722,11 +749,10 @@ class _TradeScreenState extends State<TradeScreen>
         trade.currentProfit == null &&
         (trade.profitLossAmount == null || trade.profitLossAmount == 0.0);
 
-    final pnlColor =
-        showDashes ? greyText : (pnlVal >= 0 ? _binanceGreen : _binanceRed);
-    final pnlStr = showDashes
-        ? "--"
-        : "${pnlVal >= 0 ? '+' : ''}${pnlVal.toStringAsFixed(2)}";
+    final pnlColor = showDashes
+        ? greyText
+        : (pnlVal >= 0 ? const Color(0xFF2277E6) : _binanceRed);
+    final pnlStr = showDashes ? "--" : pnlVal.toStringAsFixed(2);
 
     const leverage = 20;
     final lotSize = trade.lot ?? 0.0;
@@ -737,6 +763,15 @@ class _TradeScreenState extends State<TradeScreen>
         trade.target != null ? trade.target!.toStringAsFixed(2) : "--";
     final slStr = trade.sl != null ? trade.sl!.toStringAsFixed(2) : "--";
 
+    // Get Current Price
+    double currentPrice = entryPrice; // Default
+    final liveData = context.read<DataFeedProvider>().liveData;
+    final symbolData =
+        liveData[trade.symbol] ?? liveData[(trade.symbol ?? "").toUpperCase()];
+    if (symbolData != null) {
+      currentPrice = isBuy ? symbolData.bid : symbolData.ask;
+    }
+
     final String tradeKey = trade.id ?? trade.hashCode.toString();
     final bool isExpanded = _expandedPositions.contains(tradeKey);
 
@@ -745,62 +780,97 @@ class _TradeScreenState extends State<TradeScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: isExpanded
-              ? Border.all(color: sideColor.withOpacity(0.3), width: 1)
-              : null,
+          // Removed bottom border here, handled by ListView divider now
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                      color: sideColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(4)),
-                  child: Text(isBuy ? "B" : "S",
-                      style: TextStyle(
-                          color: sideColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12)),
+                // Left Side
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top Line: Symbol, Type, Lot
+                    Row(
+                      children: [
+                        Text(
+                          trade.symbol ?? "Unknown",
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          ", ",
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          isBuy ? "buy" : "sell",
+                          style: TextStyle(
+                            color: sideColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          " ${lotSize.toString()}",
+                          style: TextStyle(
+                            color: sideColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // Bottom Line: Open -> Current
+                    Row(
+                      children: [
+                        Text(
+                          entryPrice.toStringAsFixed(5),
+                          style: TextStyle(
+                            color: greyText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: Icon(Icons.arrow_forward,
+                              size: 12, color: greyText),
+                        ),
+                        Text(
+                          currentPrice.toStringAsFixed(5),
+                          style: TextStyle(
+                            color: greyText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(trade.symbol ?? "Unknown",
-                    style: TextStyle(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(4)),
-                  child: Text("${leverage}x",
-                      style: TextStyle(color: greyText, fontSize: 11)),
-                ),
-                const SizedBox(width: 12),
+
+                // Right Side: PnL
                 Text(pnlStr,
                     style: TextStyle(
                         color: pnlColor,
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold)),
-                const Spacer(),
-                AnimatedRotation(
-                  turns: isExpanded ? 0.5 : 0.0,
-                  duration: const Duration(milliseconds: 250),
-                  child: Icon(Icons.keyboard_arrow_down_rounded,
-                      color: greyText, size: 22),
-                ),
               ],
             ),
+
+            // Expanded Content
             AnimatedCrossFade(
               firstChild: const SizedBox.shrink(),
               secondChild: _buildExpandedContent(
@@ -871,7 +941,7 @@ class _TradeScreenState extends State<TradeScreen>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Unrealized PNL (USDT)",
+                Text("Total PNL (USDT)",
                     style: TextStyle(color: greyText, fontSize: 12)),
                 const SizedBox(height: 4),
                 Text(pnlStr,

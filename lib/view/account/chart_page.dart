@@ -1,3 +1,4 @@
+import 'package:exness_clone/services/data_feed_ws.dart';
 import 'package:exness_clone/view/account/buy_sell_trade/cubit/trade_cubit.dart';
 import 'package:exness_clone/view/account/buy_sell_trade/cubit/trade_state.dart';
 import 'package:exness_clone/view/account/buy_sell_trade/model/trade_payload.dart';
@@ -10,10 +11,10 @@ import 'package:exness_clone/theme/app_flavor_color.dart';
 import 'package:exness_clone/services/trading_view_service.dart';
 import 'package:exness_clone/services/switch_account_service.dart';
 import 'package:exness_clone/provider/datafeed_provider.dart';
-import 'package:exness_clone/services/data_feed_ws.dart';
 import 'package:exness_clone/theme/app_colors.dart';
 import 'package:exness_clone/services/storage_service.dart';
 import 'package:exness_clone/utils/snack_bar.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../../cubit/symbol/symbol_cubit.dart';
 import '../../cubit/symbol/symbol_state.dart';
@@ -31,7 +32,7 @@ class _ChartPageState extends State<ChartPage> {
   final TradingViewService _chartService = TradingViewService();
 
   String _selectedSymbol = "BTCUSD";
-  String _selectedInterval = "60";
+  String _selectedInterval = "1";
   String? _lastLoadedUserId;
 
   final TextEditingController _lotController =
@@ -58,7 +59,8 @@ class _ChartPageState extends State<ChartPage> {
     context.read<DataFeedProvider>().subscribeToSymbols([symbol.toUpperCase()]);
   }
 
-  void _loadChart(String symbol, String interval, String tradeUserId) {
+  void _loadChart(
+      String symbol, String interval, String tradeUserId, bool isDarkMode) {
     if (!mounted) return;
     _subscribeToSymbol(symbol);
 
@@ -71,6 +73,7 @@ class _ChartPageState extends State<ChartPage> {
             interval: interval,
             tradeUserId: tradeUserId,
             context: context,
+            isDarkMode: isDarkMode,
           );
         });
       }
@@ -138,7 +141,7 @@ class _ChartPageState extends State<ChartPage> {
     }
 
     final payload = TradePayload(
-      symbol: symbolId!,
+      symbol: symbolId,
       lot: _lotSize,
       bs: isBuy ? 'Buy' : 'Sell',
       tradeAccountId: accountId,
@@ -279,8 +282,11 @@ class _ChartPageState extends State<ChartPage> {
                                   _subscribeToSymbol(symbol.symbolName);
                                   setState(() {
                                     _selectedSymbol = symbol.symbolName;
+                                    final isDark =
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark;
                                     _loadChart(_selectedSymbol,
-                                        _selectedInterval, currentId);
+                                        _selectedInterval, currentId, isDark);
                                   });
                                   Navigator.pop(context);
                                 },
@@ -302,6 +308,8 @@ class _ChartPageState extends State<ChartPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return SwitchAccountService(
       accountBuilder: (context, account) {
         final tradeUserId = account.id ?? '';
@@ -310,7 +318,8 @@ class _ChartPageState extends State<ChartPage> {
             (_controller == null || _lastLoadedUserId != tradeUserId)) {
           Future.delayed(Duration.zero, () {
             if (mounted)
-              _loadChart(_selectedSymbol, _selectedInterval, tradeUserId);
+              _loadChart(
+                  _selectedSymbol, _selectedInterval, tradeUserId, isDarkMode);
           });
         }
 
@@ -365,14 +374,12 @@ class _ChartPageState extends State<ChartPage> {
                 ),
               ],
             ),
-            bottomNavigationBar: _buildTradeBottomBar(tradeUserId),
+            bottomNavigationBar: _buildTradeBottomBar(tradeUserId, isDarkMode),
             body: Column(
               children: [
                 Expanded(
                   child: _controller == null
-                      ? Center(
-                          child: CircularProgressIndicator(
-                              color: AppFlavorColor.primary))
+                      ? const Center(child: CupertinoActivityIndicator())
                       : Selector<DataFeedProvider, LiveProfit?>(
                           selector: (_, provider) {
                             return provider.liveData[_selectedSymbol] ??
@@ -390,7 +397,8 @@ class _ChartPageState extends State<ChartPage> {
                                 timestamp: liveProfit.timestamp,
                               );
                             }
-                            return WebViewWidget(controller: _controller!);
+                            return RepaintBoundary(
+                                child: WebViewWidget(controller: _controller!));
                           },
                         ),
                 ),
@@ -411,21 +419,15 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  Widget _buildTradeBottomBar(String accountId) {
-    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
+  Widget _buildTradeBottomBar(String accountId, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: context.backgroundColor,
-        border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.2))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          )
-        ],
+        color: isDarkMode ? const Color(0xFF1E2329) : Colors.white,
+        border: Border(
+            top: BorderSide(
+                color: isDarkMode ? Colors.white10 : Colors.black12,
+                width: 0.5)),
       ),
       child: SafeArea(
         child: Row(
@@ -436,39 +438,43 @@ class _ChartPageState extends State<ChartPage> {
                 builder: (context, state) {
                   return ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.blueColor,
+                      backgroundColor: const Color(0xFFF6465D),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: state.isLoading
                         ? null
-                        : () => _onTrade(true, accountId),
+                        : () => _onTrade(false, accountId),
                     child: state.isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2))
-                        : const Text("BUY",
+                        : const Text("Sell / Short",
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16)),
+                                fontSize: 14)),
                   );
                 },
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               flex: 3,
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.withOpacity(0.4)),
+                  border: Border.all(
+                      color:
+                          isDarkMode ? Colors.white24 : Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(8),
-                  color: context.boxDecorationColor,
+                  color: isDarkMode
+                      ? const Color(0xFF2B3139)
+                      : const Color(0xFFF5F5F5),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -481,9 +487,9 @@ class _ChartPageState extends State<ChartPage> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         style: TextStyle(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: isDarkMode ? Colors.white : Colors.black,
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
@@ -503,33 +509,33 @@ class _ChartPageState extends State<ChartPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: BlocBuilder<TradeCubit, TradeState>(
                 builder: (context, state) {
                   return ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.redColor,
+                      backgroundColor: const Color(0xFF0ECB81),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: state.isLoading
                         ? null
-                        : () => _onTrade(false, accountId),
+                        : () => _onTrade(true, accountId),
                     child: state.isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2))
-                        : const Text("SELL",
+                        : const Text("Buy / Long",
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16)),
+                                fontSize: 14)),
                   );
                 },
               ),
@@ -543,7 +549,7 @@ class _ChartPageState extends State<ChartPage> {
   Widget _stepperButton(IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         width: 40,
         height: double.infinity,
