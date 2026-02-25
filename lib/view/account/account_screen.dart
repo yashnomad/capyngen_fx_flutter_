@@ -40,6 +40,10 @@ import '../trade/bloc/accounts_bloc.dart';
 import '../trade/model/trade_account.dart';
 import 'btc_chart/btc_chart_screen_updated.dart';
 import 'chart_data/dummy_chart/dummy_chart_data.dart';
+import '../../widget/verification_status_banner.dart';
+import '../profile/user_profile/bloc/user_profile_bloc.dart';
+import '../profile/user_profile/bloc/user_profile_event.dart';
+import '../profile/user_profile/bloc/user_profile_state.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -55,6 +59,11 @@ class _AccountScreenState extends State<AccountScreen>
   @override
   void initState() {
     super.initState();
+    // Only fetch if profile isn't already loaded (avoids overwriting optimistic KYC status)
+    final bloc = context.read<UserProfileBloc>();
+    if (bloc.state is! UserProfileLoaded) {
+      bloc.add(FetchUserProfile());
+    }
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -106,6 +115,7 @@ class _AccountScreenState extends State<AccountScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _buildAppBar(),
+                            const VerificationStatusBanner(),
                             SlideTransition(
                               position: Tween<Offset>(
                                 begin: const Offset(0, 0.15),

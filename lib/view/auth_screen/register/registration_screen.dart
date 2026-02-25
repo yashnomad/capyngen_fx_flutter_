@@ -1,3 +1,4 @@
+import 'package:exness_clone/config/flavor_assets.dart';
 import 'package:exness_clone/core/extensions.dart';
 import 'package:exness_clone/utils/snack_bar.dart';
 import 'package:exness_clone/utils/validators.dart';
@@ -21,6 +22,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _referController = TextEditingController();
 
@@ -58,6 +60,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _referController.dispose();
     super.dispose();
@@ -155,6 +158,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         context.read<RegistrationBloc>().add(RegisterUser(
             fullName: _nameController.text.trim(),
             email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
             password: _passwordController.text,
             referedBy: _referController.text.trim().isEmpty
                 ? null
@@ -205,9 +209,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 10),
-                  const Text(
-                    "Welcome to Capyngen.",
-                    style: TextStyle(
+                  Text(
+                    "Welcome to ${FlavorAssets.appName}!",
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
@@ -234,6 +238,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     hint: "Enter your email address",
                     keyboardType: TextInputType.emailAddress,
                     validator: Validators.validateEmail,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: _phoneController,
+                    label: "Phone Number",
+                    hint: "Enter your phone number",
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your phone number';
+                      }
+                      if (value.trim().length < 10) {
+                        return 'Enter a valid phone number';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                   _buildTextField(

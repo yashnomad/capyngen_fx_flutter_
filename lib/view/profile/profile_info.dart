@@ -15,6 +15,7 @@ import '../../config/flavor_config.dart';
 import '../../widget/slidepage_navigate.dart';
 import 'add_account/add_account.dart';
 import 'add_account/bloc/bank_account_bloc.dart';
+import 'package:exness_clone/view/auth_screen/verification/document_verification_screen.dart';
 
 class ProfileInfo extends StatefulWidget {
   const ProfileInfo({super.key});
@@ -499,9 +500,9 @@ class _ProfileInfoState extends State<ProfileInfo>
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.description_rounded, size: 16),
+                      Icon(Icons.verified_user_rounded, size: 16),
                       const SizedBox(width: 4),
-                      const Flexible(child: Text("Docs")),
+                      const Flexible(child: Text("KYC Status")),
                     ],
                   ),
                 ),
@@ -606,8 +607,8 @@ class _ProfileInfoState extends State<ProfileInfo>
                   _buildPremiumInfoItem("Full Name", profile.fullName ?? ''),
                   _buildPremiumInfoItem("Account ID", profile.accountId ?? ''),
                   _buildPremiumInfoItem("Email Address", profile.email ?? ''),
-                  _buildPremiumInfoItem("Country", "N/A"),
-                  _buildPremiumInfoItem("City", "N/A"),
+                  _buildPremiumInfoItem("Country", profile.country ?? 'N/A'),
+                  _buildPremiumInfoItem("City", profile.city ?? 'N/A'),
 
                   const SizedBox(height: 8),
                   Text(
@@ -639,6 +640,431 @@ class _ProfileInfoState extends State<ProfileInfo>
         ),
       ),
     );
+  }
+
+  Widget _buildKycStatusTab(Profile profile) {
+    final kycStatus = profile.kycStatus ?? 'pending';
+    final docType = profile.documentType;
+    final docName = docType?.value ?? 'Document';
+    final submittedDate = docType?.submittedAt ?? 'N/A';
+    final approvedDate = docType?.approvedAt;
+    final rejectedDate = docType?.rejectedAt;
+
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Status Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: _getStatusGradient(kycStatus),
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _getStatusColor(kycStatus).withOpacity(0.3),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _getStatusColor(kycStatus).withOpacity(0.15),
+                        blurRadius: 15,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Status Icon
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(kycStatus).withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _getStatusIcon(kycStatus),
+                          size: 32,
+                          color: _getStatusColor(kycStatus),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Status Title
+                      Text(
+                        _getStatusTitle(kycStatus),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          color: context.profileIconColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      // Status Description
+                      Text(
+                        _getStatusDescription(kycStatus),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      // Action button for pending/rejected
+                      if (kycStatus == 'pending' ||
+                          kycStatus == 'rejected') ...[
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                SlidePageRoute(
+                                  page: const DocumentVerification(),
+                                ),
+                              );
+                            },
+                            icon: Icon(
+                              kycStatus == 'rejected'
+                                  ? Icons.refresh_rounded
+                                  : Icons.verified_outlined,
+                              size: 18,
+                            ),
+                            label: Text(
+                              kycStatus == 'rejected'
+                                  ? 'Submit Again'
+                                  : 'Complete KYC',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _getStatusColor(kycStatus),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Review Details (for under_review, verified, or rejected with docs)
+                if (kycStatus == 'under_review' ||
+                    kycStatus == 'verified' ||
+                    (kycStatus == 'rejected' && docType?.value != null)) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          context.appBarGradientColor,
+                          context.appBarGradientColorSecond,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.15),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          kycStatus == 'verified'
+                              ? 'Verification Details'
+                              : 'Review Details',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: context.profileIconColor,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _buildDetailRow('Document Type', docName),
+                        const SizedBox(height: 10),
+                        _buildDetailRow('Submitted On', submittedDate),
+                        if (approvedDate != null) ...[
+                          const SizedBox(height: 10),
+                          _buildDetailRow('Approved On', approvedDate),
+                        ],
+                        if (rejectedDate != null) ...[
+                          const SizedBox(height: 10),
+                          _buildDetailRow('Rejected On', rejectedDate),
+                        ],
+                        const SizedBox(height: 10),
+                        _buildDetailRow(
+                          'Status',
+                          kycStatus == 'verified'
+                              ? 'Verified'
+                              : kycStatus == 'rejected'
+                                  ? 'Rejected'
+                                  : 'Under Review',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Uploaded Document Images (only for verified)
+                if (kycStatus == 'verified' &&
+                    (docType?.frontImageUrl != null ||
+                        docType?.backImageUrl != null)) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          context.appBarGradientColor,
+                          context.appBarGradientColorSecond,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.15),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Uploaded Documents',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: context.profileIconColor,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            if (docType?.frontImageUrl != null)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Front Side',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey.shade600)),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        docType!.frontImageUrl!,
+                                        height: 160,
+                                        width: double.infinity,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (ctx, err, stack) =>
+                                            Container(
+                                          height: 160,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade200,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: const Center(
+                                            child: Icon(
+                                                Icons
+                                                    .image_not_supported_outlined,
+                                                color: Colors.grey,
+                                                size: 28),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (docType?.frontImageUrl != null &&
+                                docType?.backImageUrl != null)
+                              const SizedBox(width: 12),
+                            if (docType?.backImageUrl != null)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Back Side',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey.shade600)),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        docType!.backImageUrl!,
+                                        height: 160,
+                                        width: double.infinity,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (ctx, err, stack) =>
+                                            Container(
+                                          height: 160,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade200,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: const Center(
+                                            child: Icon(
+                                                Icons
+                                                    .image_not_supported_outlined,
+                                                color: Colors.grey,
+                                                size: 28),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: context.profileIconColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static const _monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'verified':
+        return Colors.green.shade600;
+      case 'under_review':
+        return Colors.blue.shade600;
+      case 'rejected':
+        return Colors.red.shade600;
+      default:
+        return _flavorColor;
+    }
+  }
+
+  List<Color> _getStatusGradient(String status) {
+    switch (status) {
+      case 'verified':
+        return [Colors.green.shade50, Colors.green.shade100.withOpacity(0.5)];
+      case 'under_review':
+        return [Colors.blue.shade50, Colors.blue.shade100.withOpacity(0.5)];
+      case 'rejected':
+        return [Colors.red.shade50, Colors.red.shade100.withOpacity(0.5)];
+      default:
+        return [
+          context.appBarGradientColor,
+          context.appBarGradientColorSecond,
+        ];
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'verified':
+        return Icons.check_circle_rounded;
+      case 'under_review':
+        return Icons.hourglass_top_rounded;
+      case 'rejected':
+        return Icons.cancel_rounded;
+      default:
+        return Icons.upload_file_rounded;
+    }
+  }
+
+  String _getStatusTitle(String status) {
+    switch (status) {
+      case 'verified':
+        return 'KYC Verified';
+      case 'under_review':
+        return 'KYC Verification Under Review';
+      case 'rejected':
+        return 'KYC Rejected';
+      default:
+        return 'Complete KYC';
+    }
+  }
+
+  String _getStatusDescription(String status) {
+    switch (status) {
+      case 'verified':
+        return 'Your identity has been successfully verified.';
+      case 'under_review':
+        return "Our team is currently reviewing your documents. We'll notify you once the verification is complete.";
+      case 'rejected':
+        return 'Your documents were rejected. Please review and submit again.';
+      default:
+        return 'Upload your identity documents to complete verification and unlock all features.';
+    }
   }
 
   Widget _buildPremiumBankingTab(Profile profile) {
@@ -852,142 +1278,7 @@ class _ProfileInfoState extends State<ProfileInfo>
                   controller: _tabController,
                   children: [
                     if (user != null) _buildPremiumOverviewTab(user),
-                    SlideTransition(
-                      position: _slideAnimation,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  context.appBarGradientColor,
-                                  context.appBarGradientColorSecond,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.grey.withOpacity(0.1),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              _flavorColor.withOpacity(0.1),
-                                              _flavorColor.withOpacity(0.2),
-                                            ],
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          Icons.description_rounded,
-                                          color: _flavorColor,
-                                          size: 22,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          "Kyc Documents",
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w800,
-                                            color: context.profileIconColor,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(32),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.grey.shade50
-                                                .withOpacity(0.5),
-                                            Colors.blue.shade50
-                                                .withOpacity(0.3),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: Colors.grey.shade200,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: (user?.documentType
-                                                      ?.status !=
-                                                  null &&
-                                              user?.documentType
-                                                      ?.status !=
-                                                  null)
-                                          ? Row(
-                                              children: [
-                                                Flexible(
-                                                  child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                    child: Image.network(
-                                                      user!.documentType!
-                                                          .status!,
-                                                      height: 230,
-                                                      fit: BoxFit.cover,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 20,
-                                                ),
-                                                Flexible(
-                                                  child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                    child: Image.network(
-                                                      user.documentType!
-                                                          .status!,
-                                                      height: 230,
-                                                      fit: BoxFit.cover,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                          : Text('No Documents available'))
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    if (user != null) _buildKycStatusTab(user),
                     if (user != null) _buildPremiumBankingTab(user),
                   ],
                 ),

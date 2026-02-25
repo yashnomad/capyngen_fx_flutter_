@@ -11,14 +11,14 @@ class UserProfile {
     return UserProfile(
       success: json['success'],
       profile:
-      json['profile'] == null ? null : Profile.fromJson(json['profile']),
+          json['profile'] == null ? null : Profile.fromJson(json['profile']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'success': success,
-    'profile': profile?.toJson(),
-  };
+        'success': success,
+        'profile': profile?.toJson(),
+      };
 }
 
 class Profile {
@@ -109,50 +109,80 @@ class Profile {
   }
 
   Map<String, dynamic> toJson() => {
-    'documentType': documentType?.toJson(),
-    'bank': bank?.toJson(),
-    'upi_details': upiDetails?.toJson(),
-    '_id': id,
-    'fullName': fullName,
-    'accountId': accountId,
-    'email': email,
-    'refered_by': referedBy,
-    'refered_code': referedCode,
-    'currency': currency,
-    'isVerified': isVerified,
-    'account_status': accountStatus,
-    'broker_id': brokerId,
-    'kycApprovedBy': kycApprovedBy,
-    'kycStatus': kycStatus,
-    'country': country,
-    'city': city,
-    'loginAt': loginAt?.toIso8601String(),
-    'activeTradeAccount': activeTradeAccount,
-    'createdAt': createdAt?.toIso8601String(),
-    'updatedAt': updatedAt?.toIso8601String(),
-    '__v': v,
-    'verification_status': verificationStatus,
-    'navigatorPage': navigatorPage,
-  };
+        'documentType': documentType?.toJson(),
+        'bank': bank?.toJson(),
+        'upi_details': upiDetails?.toJson(),
+        '_id': id,
+        'fullName': fullName,
+        'accountId': accountId,
+        'email': email,
+        'refered_by': referedBy,
+        'refered_code': referedCode,
+        'currency': currency,
+        'isVerified': isVerified,
+        'account_status': accountStatus,
+        'broker_id': brokerId,
+        'kycApprovedBy': kycApprovedBy,
+        'kycStatus': kycStatus,
+        'country': country,
+        'city': city,
+        'loginAt': loginAt?.toIso8601String(),
+        'activeTradeAccount': activeTradeAccount,
+        'createdAt': createdAt?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
+        '__v': v,
+        'verification_status': verificationStatus,
+        'navigatorPage': navigatorPage,
+      };
 }
-
 
 class DocumentType {
   final String? status;
+  final String? value;
+  final String? frontImageUrl;
+  final String? backImageUrl;
+  final String? submittedAt;
+  final String? approvedAt;
+  final String? rejectedAt;
 
-  DocumentType({this.status});
+  DocumentType({
+    this.status,
+    this.value,
+    this.frontImageUrl,
+    this.backImageUrl,
+    this.submittedAt,
+    this.approvedAt,
+    this.rejectedAt,
+  });
 
   factory DocumentType.fromJson(Map<String, dynamic> json) {
     return DocumentType(
       status: json['status'],
+      value: json['value'],
+      frontImageUrl: json['frontImageUrl'],
+      backImageUrl: json['backImageUrl'],
+      submittedAt: _stripTime(json['submittedAt']),
+      approvedAt: _stripTime(json['approvedAt']),
+      rejectedAt: _stripTime(json['rejectedAt']),
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'status': status,
-  };
-}
+  static String? _stripTime(dynamic val) {
+    if (val == null) return null;
+    final str = val.toString();
+    return str.contains(',') ? str.split(',').first.trim() : str;
+  }
 
+  Map<String, dynamic> toJson() => {
+        'status': status,
+        'value': value,
+        'frontImageUrl': frontImageUrl,
+        'backImageUrl': backImageUrl,
+        'submittedAt': submittedAt,
+        'approvedAt': approvedAt,
+        'rejectedAt': rejectedAt,
+      };
+}
 
 class Bank {
   final String? bankAccountNumber;
@@ -174,12 +204,11 @@ class Bank {
   }
 
   Map<String, dynamic> toJson() => {
-    'bankAccountNumber': bankAccountNumber,
-    'ifscCode': ifscCode,
-    'bankName': bankName,
-  };
+        'bankAccountNumber': bankAccountNumber,
+        'ifscCode': ifscCode,
+        'bankName': bankName,
+      };
 }
-
 
 class UpiDetails {
   final String? upiId;
@@ -198,11 +227,10 @@ class UpiDetails {
   }
 
   Map<String, dynamic> toJson() => {
-    'upi_id': upiId,
-    'provider_name': providerName,
-  };
+        'upi_id': upiId,
+        'provider_name': providerName,
+      };
 }
-
 
 /*
 class UserProfile {

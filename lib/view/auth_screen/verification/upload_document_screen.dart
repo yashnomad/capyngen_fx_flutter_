@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:exness_clone/core/extensions.dart';
 import 'package:exness_clone/network/api_service.dart';
 import 'package:exness_clone/theme/app_flavor_color.dart';
-import 'package:exness_clone/utils/common_utils.dart';
 import 'package:exness_clone/utils/snack_bar.dart';
 import 'package:exness_clone/view/auth_screen/verification/verification_submitted_screen.dart';
 import 'package:exness_clone/widget/button/app_button.dart';
@@ -12,11 +11,14 @@ import 'package:exness_clone/widget/button/premium_icon_button.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constant/app_strings.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widget/slidepage_navigate.dart';
+import '../../profile/user_profile/bloc/user_profile_bloc.dart';
+import '../../profile/user_profile/bloc/user_profile_event.dart';
 
 class UploadDocument extends StatefulWidget {
   final String idTitle;
@@ -30,17 +32,28 @@ class UploadDocument extends StatefulWidget {
 class _UploadDocumentState extends State<UploadDocument> {
   late String idTitle;
 
+  // Map display names to backend API values
+  static const Map<String, String> _docTypeMap = {
+    'National ID': 'nationalId',
+    'Passport': 'passport',
+    'Driving License': 'drivingLicense',
+  };
+
   @override
   void initState() {
     super.initState();
-    idTitle = CommonUtils.toCamelCase(widget.idTitle);
-    debugPrint(idTitle);
+    idTitle = _docTypeMap[widget.idTitle] ?? widget.idTitle.toLowerCase();
+    debugPrint('[Upload] Document type: ${widget.idTitle} → $idTitle');
   }
 
   int currentStep = 2;
 
   PlatformFile? frontFile;
   PlatformFile? backFile;
+  String? _sizeWarning;
+  bool _isSubmitting = false;
+
+  static const int _maxFileSizeBytes = 200 * 1024; // 200KB
 
   Future _uploadDocument() async {
     if (frontFile == null || backFile == null) {
@@ -53,16 +66,19 @@ class _UploadDocumentState extends State<UploadDocument> {
       return;
     }
 
+    setState(() => _isSubmitting = true);
+
     try {
       debugPrint('[Upload] 📤 Preparing KYC data');
 
       final kycData = {
         'documentType': idTitle,
-        'frontSide': frontFile!,  // ✅ Matches backend expectation
-        'backSide': backFile!,    // ✅ Matches backend expectation
+        'frontSide': frontFile!,
+        'backSide': backFile!,
       };
 
-      debugPrint('[Upload] Sending: documentType=$idTitle, frontSide=${frontFile!.name}, backSide=${backFile!.name}');
+      debugPrint(
+          '[Upload] Sending: documentType=$idTitle, frontSide=${frontFile!.name}, backSide=${backFile!.name}');
 
       final response = await ApiService.submitKyc(kycData);
 
@@ -73,7 +89,10 @@ class _UploadDocumentState extends State<UploadDocument> {
         SnackBarService.showSuccess(
             data?['message'] ?? 'KYC submitted successfully');
         if (mounted) {
-          context.pushNamed('verificationSubmitted');
+          // Optimistically set kycStatus to 'under_review' locally
+          context.read<UserProfileBloc>().add(KycSubmitted());
+          // Navigate to home (NOT '/' which is splash and re-fetches profile)
+          context.go('/home');
         }
       } else {
         SnackBarService.showError(data?['message'] ?? 'Submission failed');
@@ -81,6 +100,8 @@ class _UploadDocumentState extends State<UploadDocument> {
     } catch (e) {
       debugPrint('❌ Upload error: $e');
       SnackBarService.showError('Upload failed: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -143,9 +164,7 @@ class _UploadDocumentState extends State<UploadDocument> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height: 12,
-                    ),
+                    SizedBox(height: 12),
                     Padding(
                       padding: const EdgeInsets.all(15),
                       child: Column(
@@ -158,42 +177,112 @@ class _UploadDocumentState extends State<UploadDocument> {
                                   stepIndex: 1,
                                   stepNumber: "1",
                                   title: "Select\nDocument"),
-                              SizedBox(
-                                width: 10,
-                              ),
+                              SizedBox(width: 10),
                               buildStep(
                                   stepIndex: 2,
                                   stepNumber: "2",
                                   title: "Upload\nDocuments"),
-                              SizedBox(
-                                width: 10,
-                              ),
+                              SizedBox(width: 10),
                               buildStep(
                                   stepIndex: 3,
                                   stepNumber: "3",
                                   title: "Complete"),
                             ],
                           ),
-                          SizedBox(
-                            height: 40,
+                          SizedBox(height: 20),
+
+                          // Size warning banner
+                          if (_sizeWarning != null)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: Colors.red.shade200, width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline,
+                                      color: Colors.red.shade600, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _sizeWarning!,
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () =>
+                                        setState(() => _sizeWarning = null),
+                                    child: Icon(Icons.close,
+                                        color: Colors.red.shade400, size: 18),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                          // Title row with max size badge
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Upload Your ${widget.idTitle}',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColor.blackColor),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Please provide clear photos of both sides.',
+                                      style: TextStyle(
+                                          color: AppColor.greyColor,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border:
+                                      Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.photo_size_select_large,
+                                        color: Colors.blue.shade600, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Max size: 200KB',
+                                      style: TextStyle(
+                                          color: Colors.blue.shade700,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Upload Your ${widget.idTitle}',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: AppColor.blackColor),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Please upload clear photos or scans of both the front and back sides of your ${widget.idTitle}.',
-                            style: TextStyle(
-                                color: AppColor.greyColor,
-                                fontWeight: FontWeight.w500),
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
+                          SizedBox(height: 20),
+
                           Container(
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey.shade300),
@@ -227,7 +316,52 @@ class _UploadDocumentState extends State<UploadDocument> {
                                       const SizedBox(height: 20),
                                       buildFileUploadBox(
                                           title: "Back Side", isFront: false),
-                                      const SizedBox(height: 30),
+                                      const SizedBox(height: 20),
+
+                                      // Document Requirements
+                                      Container(
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                              color: Colors.blue.shade100),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.info_outline_rounded,
+                                                    color: Colors.blue.shade600,
+                                                    size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Document Requirements:',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 13,
+                                                      color:
+                                                          Colors.blue.shade700),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            _buildRequirementItem(
+                                                'Ensure the image is not blurry and details are readable.'),
+                                            _buildRequirementItem(
+                                                'All four corners of the document must be visible.'),
+                                            _buildRequirementItem(
+                                                'File size strictly under 200KB.',
+                                                isBold: true),
+                                          ],
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 24),
                                       Row(
                                         children: [
                                           PremiumIconButton(
@@ -235,13 +369,19 @@ class _UploadDocumentState extends State<UploadDocument> {
                                             onPressed: () =>
                                                 Navigator.pop(context),
                                           ),
-                                          SizedBox(
-                                            width: 20,
-                                          ),
+                                          SizedBox(width: 20),
                                           Expanded(
-                                            child: PremiumAppButton(
-                                                text: 'Submit Verification',
-                                                onPressed: _uploadDocument),
+                                            child: _isSubmitting
+                                                ? Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      color: AppFlavorColor
+                                                          .primary,
+                                                    ),
+                                                  )
+                                                : PremiumAppButton(
+                                                    text: 'Submit Verification',
+                                                    onPressed: _uploadDocument),
                                           ),
                                         ],
                                       ),
@@ -254,9 +394,7 @@ class _UploadDocumentState extends State<UploadDocument> {
                         ],
                       ),
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
+                    SizedBox(height: 10),
                     Container(
                       width: double.infinity,
                       height: 50,
@@ -291,14 +429,6 @@ class _UploadDocumentState extends State<UploadDocument> {
                                         color: AppFlavorColor.primary,
                                         fontWeight: FontWeight.w500),
                                   ),
-                                  // Spacer(),
-                                  // Text(
-                                  //   'Back to Dashboard',
-                                  //   style: TextStyle(
-                                  //       fontWeight: FontWeight.w500,
-                                  //       color: AppColor.greyColor,
-                                  //       fontSize: 12),
-                                  // )
                                 ],
                               ),
                             ),
@@ -309,9 +439,7 @@ class _UploadDocumentState extends State<UploadDocument> {
                   ],
                 ),
               ),
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
               Row(
                 children: [
                   Icon(
@@ -319,9 +447,7 @@ class _UploadDocumentState extends State<UploadDocument> {
                     color: AppFlavorColor.primary,
                     size: 14,
                   ),
-                  SizedBox(
-                    width: 10,
-                  ),
+                  SizedBox(width: 10),
                   Expanded(
                       child: Text(
                     'Your information is encrypted and securely stored. We comply with GDPR and data protection regulations.',
@@ -332,12 +458,33 @@ class _UploadDocumentState extends State<UploadDocument> {
                   ))
                 ],
               ),
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(String text, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4, left: 26),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("• ",
+              style: TextStyle(color: Colors.blue.shade600, fontSize: 13)),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.blue.shade600,
+                fontSize: 12,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -349,11 +496,24 @@ class _UploadDocumentState extends State<UploadDocument> {
     );
 
     if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      final fileSize = file.size;
+
+      if (fileSize > _maxFileSizeBytes) {
+        final sizeInKB = (fileSize / 1024).toStringAsFixed(1);
+        setState(() {
+          _sizeWarning =
+              '${file.name} exceeds 200KB limit ($sizeInKB KB). Please compress the image.';
+        });
+        return;
+      }
+
       setState(() {
+        _sizeWarning = null;
         if (isFront) {
-          frontFile = result.files.first;
+          frontFile = file;
         } else {
-          backFile = result.files.first;
+          backFile = file;
         }
       });
     }
@@ -367,9 +527,9 @@ class _UploadDocumentState extends State<UploadDocument> {
       children: [
         Text(title,
             style: TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-                color: AppColor.greyColor)),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: AppColor.blackColor)),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: () => pickFile(isFront),
@@ -378,7 +538,12 @@ class _UploadDocumentState extends State<UploadDocument> {
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColor.lightGrey)),
+                border: Border.all(
+                    color: file != null
+                        ? AppFlavorColor.primary.withOpacity(0.3)
+                        : AppColor.lightGrey,
+                    style:
+                        file != null ? BorderStyle.solid : BorderStyle.solid)),
             child: Center(
               child: file == null
                   ? Column(
@@ -388,25 +553,32 @@ class _UploadDocumentState extends State<UploadDocument> {
                             color: AppFlavorColor.primary, size: 32),
                         const SizedBox(height: 8),
                         Text(
-                          "Drag & drop your file here or click to browse",
+                          "Click or Drag & Drop",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              color: AppColor.greyColor, fontSize: 12),
+                              color: AppColor.blackColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500),
                         ),
-                        SizedBox(
-                          height: 4,
-                        ),
-                        Text("JPG, PNG or PDF (max 5MB)",
+                        SizedBox(height: 4),
+                        Text("Supported: JPG, PNG, PDF",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                fontSize: 10, color: AppColor.greyColor)),
+                                fontSize: 11, color: AppColor.greyColor)),
+                        SizedBox(height: 2),
+                        Text("MAX SIZE: 200KB",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: AppColor.greyColor,
+                                fontWeight: FontWeight.w600)),
                       ],
                     )
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.insert_drive_file,
-                            color: AppFlavorColor.primary, size: 32),
+                        Icon(Icons.check_circle_rounded,
+                            color: Colors.green, size: 32),
                         const SizedBox(height: 8),
                         Text(
                           file.name,
@@ -414,9 +586,13 @@ class _UploadDocumentState extends State<UploadDocument> {
                               fontSize: 13, color: AppColor.blackColor),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(
-                          height: 4,
-                        ),
+                        SizedBox(height: 4),
+                        Text("${(file.size / 1024).toStringAsFixed(1)} KB",
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500)),
+                        SizedBox(height: 2),
                         Text("Tap to change",
                             style: TextStyle(
                                 fontSize: 12, color: AppColor.greyColor)),
@@ -435,7 +611,7 @@ class _UploadDocumentState extends State<UploadDocument> {
     required String title,
   }) {
     bool isActive = currentStep >= stepIndex;
-    bool isCompleted = currentStep >= 3 && stepIndex == 3;
+    bool isCompleted = currentStep > stepIndex;
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -466,27 +642,6 @@ class _UploadDocumentState extends State<UploadDocument> {
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildBulletText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("• ", style: TextStyle(color: AppFlavorColor.primary)),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                  color: AppFlavorColor.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500),
-            ),
           ),
         ],
       ),

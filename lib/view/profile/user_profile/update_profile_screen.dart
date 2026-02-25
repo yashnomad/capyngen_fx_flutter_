@@ -99,46 +99,38 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Opacity(
-                      opacity: 0.2,
-                      child: Center(
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color(0xFF6C63FF).withOpacity(0.2),
-                                    const Color(0xFF6C63FF).withOpacity(0.1),
-                                  ],
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                size: 60,
-                                color: Color(0xFF6C63FF),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF6C63FF),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
+                    Center(
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppFlavorColor.primary.withOpacity(0.8),
+                              AppFlavorColor.darkPrimary.withOpacity(0.9),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppFlavorColor.primary.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            (_nameController.text.isNotEmpty
+                                    ? _nameController.text[0]
+                                    : '?')
+                                .toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ),

@@ -21,6 +21,7 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
         'fullName': event.fullName,
         'email': event.email,
         'password': event.password,
+        'phone': event.phone,
       };
 
       if (event.referedBy != null && event.referedBy!.isNotEmpty) {

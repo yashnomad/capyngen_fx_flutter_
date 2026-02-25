@@ -208,8 +208,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           if (state is UserProfileLoading) {
                             return const Loader();
                           } else if (state is UserProfileLoaded) {
-                            final status = state.profile.profile?.kycStatus;
-                            CommonUtils.debugPrintWithTrace(status!);
+                            final status =
+                                state.profile.profile?.kycStatus ?? 'pending';
 
                             return Column(
                               children: [
@@ -221,57 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   icon: Icons.person_rounded,
                                   title: 'Personal details',
                                   context: context,
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: status == 'verified'
-                                            ? [
-                                                Colors.green.shade100,
-                                                Colors.green.shade200
-                                              ]
-                                            : [
-                                                Colors.orange.shade100,
-                                                Colors.orange.shade200
-                                              ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: status == 'verified'
-                                            ? Colors.green.withOpacity(0.3)
-                                            : Colors.orange.withOpacity(0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          status == 'verified'
-                                              ? Icons.verified_rounded
-                                              : Icons.pending_rounded,
-                                          color: status == 'verified'
-                                              ? Colors.green.shade700
-                                              : Colors.orange.shade700,
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          status == 'verified'
-                                              ? 'Verified'
-                                              : 'Not verified',
-                                          style: TextStyle(
-                                            color: status == 'verified'
-                                                ? Colors.green.shade700
-                                                : Colors.orange.shade700,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  trailing: _buildKycStatusBadge(status),
                                 ),
                                 BlocBuilder<UserProfileBloc, UserProfileState>(
                                   builder: (context, state) {
@@ -640,6 +590,283 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(height: 40),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleKycNavigation(
+      BuildContext context, String status, bool hasDocuments) {
+    switch (status) {
+      case 'verified':
+        Navigator.push(context, SlidePageRoute(page: ProfileInfo()));
+        break;
+      case 'rejected':
+        _showRejectedDialog(context);
+        break;
+      case 'under_review':
+        context.push('/kycStatus');
+        break;
+      case 'pending':
+      default:
+        if (hasDocuments) {
+          context.push('/kycStatus');
+        } else {
+          context.push('/kycVerification');
+        }
+        break;
+    }
+  }
+
+  Widget _buildKycDocumentsSection(DocumentType docType, String status) {
+    final docName = docType.value ?? 'Document';
+    final submittedAt = docType.submittedAt;
+    final formattedDate = submittedAt ?? 'N/A';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.folder_outlined,
+                  size: 18, color: AppFlavorColor.primary),
+              const SizedBox(width: 8),
+              Text(
+                'KYC Documents',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: AppColor.blackColor,
+                ),
+              ),
+              const Spacer(),
+              _buildKycStatusBadge(status),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Document info
+          Row(
+            children: [
+              _buildDocInfoChip(Icons.description_outlined, docName),
+              const SizedBox(width: 10),
+              _buildDocInfoChip(Icons.calendar_today_outlined, formattedDate),
+            ],
+          ),
+          // Image thumbnails
+          if (docType.frontImageUrl != null ||
+              docType.backImageUrl != null) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                if (docType.frontImageUrl != null)
+                  _buildDocImageThumb('Front Side', docType.frontImageUrl!),
+                if (docType.frontImageUrl != null &&
+                    docType.backImageUrl != null)
+                  const SizedBox(width: 12),
+                if (docType.backImageUrl != null)
+                  _buildDocImageThumb('Back Side', docType.backImageUrl!),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppColor.greyColor),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColor.blackColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocImageThumb(String label, String imageUrl) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColor.greyColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              imageUrl,
+              height: 80,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (ctx, err, stack) => Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Icon(Icons.image_not_supported_outlined,
+                      color: AppColor.greyColor, size: 24),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKycStatusBadge(String status) {
+    MaterialColor badgeColor;
+    Color textColor;
+    IconData icon;
+    String label;
+
+    switch (status) {
+      case 'verified':
+        badgeColor = Colors.green;
+        textColor = Colors.green.shade700;
+        icon = Icons.verified_rounded;
+        label = 'Verified';
+        break;
+      case 'under_review':
+        badgeColor = Colors.blue;
+        textColor = Colors.blue.shade700;
+        icon = Icons.hourglass_top_rounded;
+        label = 'Under Review';
+        break;
+      case 'rejected':
+        badgeColor = Colors.red;
+        textColor = Colors.red.shade700;
+        icon = Icons.cancel_rounded;
+        label = 'Rejected';
+        break;
+      case 'pending':
+      default:
+        badgeColor = Colors.orange;
+        textColor = Colors.orange.shade700;
+        icon = Icons.pending_rounded;
+        label = 'Pending';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [badgeColor.shade100, badgeColor.shade200],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: badgeColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: textColor, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRejectedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded,
+                color: Colors.red.shade600, size: 28),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Verification Rejected',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Your identity verification was rejected. Please review your documents and submit again.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.push('/kycVerification');
+            },
+            child: const Text(
+              'Try to Submit Again',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],

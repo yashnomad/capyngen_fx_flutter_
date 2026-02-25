@@ -159,6 +159,8 @@ android {
         finflymarket {
             dimension "app"
             applicationId "com.finflymarket.trading"
+            versionCode 1
+            versionName "1.0.0"
             versionNameSuffix "-finflymarket"
             resValue "string", "app_name", "Finfly Market"
             buildConfigField "String", "BASE_URL", '"https://api.capyngen.us/user"'

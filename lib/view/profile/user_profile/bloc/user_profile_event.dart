@@ -1,9 +1,10 @@
-
 abstract class UserProfileEvent {}
 
 class FetchUserProfile extends UserProfileEvent {}
 
 class ClearUserProfile extends UserProfileEvent {}
+
+class KycSubmitted extends UserProfileEvent {}
 
 class UpdateUserProfile extends UserProfileEvent {
   final String fullName;
