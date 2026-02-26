@@ -68,12 +68,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _initAnimations() {
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
@@ -82,10 +82,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.4),
+      begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(
-        CurvedAnimation(parent: _slideController, curve: Curves.elasticOut));
+        CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -95,500 +95,331 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  Widget _buildAnimatedSection({
-    required String title,
-    required List<Widget> children,
-    int delay = 0,
-  }) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildPremiumSectionCard(children),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF000000) : const Color(0xFFF5F5F7);
+
     return Scaffold(
-      backgroundColor: context.backgroundColor,
+      backgroundColor: bgColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
+          // ── Minimal App Bar ──
           SliverAppBar(
             pinned: true,
             elevation: 0,
-            expandedHeight: 140,
-            backgroundColor: AppColor.transparent,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.appBarGradientColor,
-                    context.appBarGradientColorSecond
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 24, bottom: 20),
-                title: Text(
-                  'Profile',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: context.profileIconColor,
-                    letterSpacing: 1,
-                  ),
+            scrolledUnderElevation: 0,
+            backgroundColor: bgColor,
+            expandedHeight: 110,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
+              title: Text(
+                'Profile',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                  letterSpacing: -0.5,
                 ),
               ),
+              collapseMode: CollapseMode.pin,
             ),
             actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(
-                  color: context.profileBoxColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(CupertinoIcons.settings),
-                  onPressed: () {
-                    Navigator.push(
-                        context, SlidePageRoute(page: SettingsScreen()));
-                  },
+              GestureDetector(
+                onTap: () => Navigator.push(
+                    context, SlidePageRoute(page: SettingsScreen())),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.black.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    CupertinoIcons.settings,
+                    size: 18,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             ],
           ),
+
+          // ── User Header Card ──
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildAnimatedSection(
-                    title: 'Account',
-                    children: [
-                      BlocBuilder<UserProfileBloc, UserProfileState>(
-                        builder: (context, state) {
-                          if (state is UserProfileLoading) {
-                            return const Loader();
-                          } else if (state is UserProfileLoaded) {
-                            final status =
-                                state.profile.profile?.kycStatus ?? 'pending';
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: BlocBuilder<UserProfileBloc, UserProfileState>(
+                  builder: (context, state) {
+                    if (state is UserProfileLoaded) {
+                      return _buildUserHeaderCard(
+                          context, state.profile.profile, isDark, surfaceColor);
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+          ),
 
-                            return Column(
-                              children: [
-                                _buildPremiumBenefitItem(
-                                  onTap: () {
-                                    Navigator.push(context,
-                                        SlidePageRoute(page: ProfileInfo()));
-                                  },
-                                  icon: Icons.person_rounded,
-                                  title: 'Personal details',
+          // ── Body Content ──
+          SliverToBoxAdapter(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSection(
+                        context: context,
+                        title: 'Account',
+                        isDark: isDark,
+                        surfaceColor: surfaceColor,
+                        children: [
+                          BlocBuilder<UserProfileBloc, UserProfileState>(
+                            builder: (context, state) {
+                              if (state is UserProfileLoading) {
+                                return const Loader();
+                              } else if (state is UserProfileLoaded) {
+                                final status =
+                                    state.profile.profile?.kycStatus ??
+                                        'pending';
+                                final bank = state.profile.profile?.bank;
+
+                                return Column(
+                                  children: [
+                                    _buildMenuItem(
+                                      context: context,
+                                      isDark: isDark,
+                                      icon: CupertinoIcons.person_crop_circle,
+                                      iconColor: AppFlavorColor.primary,
+                                      title: 'Personal Details',
+                                      trailing: status == 'verified'
+                                          ? _buildKycPill(status,
+                                              overrideLabel: 'KYC Verified')
+                                          : null,
+                                      onTap: () => Navigator.push(context,
+                                          SlidePageRoute(page: ProfileInfo())),
+                                      isFirst: true,
+                                      isLast: bank == null,
+                                    ),
+                                    if (bank != null)
+                                      _buildMenuItem(
+                                        context: context,
+                                        isDark: isDark,
+                                        icon: CupertinoIcons.building_2_fill,
+                                        iconColor: Colors.indigo,
+                                        title: 'Bank Account',
+                                        onTap: () => Navigator.push(
+                                            context,
+                                            SlidePageRoute(
+                                                page: UpdateBankScreen())),
+                                        isFirst: false,
+                                        isLast: true,
+                                      ),
+                                    if (bank == null) ...[
+                                      const SizedBox(height: 12),
+                                      _buildCompleteProfileBanner(
+                                          context, isDark),
+                                    ],
+                                  ],
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          _buildSingleItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.creditcard_fill,
+                            iconColor: const Color(0xFF34C759),
+                            title: 'Savings',
+                            onTap: () => Navigator.push(
+                                context, SlidePageRoute(page: SavingScreen())),
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context: context,
+                        title: 'Referral Program',
+                        isDark: isDark,
+                        surfaceColor: surfaceColor,
+                        children: [
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.gift_fill,
+                            iconColor: const Color(0xFFAF52DE),
+                            title:
+                                'Earn income by introducing clients to ${FlavorAssets.appName}',
+                            subtitle:
+                                'Share your referral link and earn commissions',
+                            onTap: () => showActionSheet(context),
+                            isFirst: true,
+                            isLast: true,
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context: context,
+                        title: 'Social Trading',
+                        isDark: isDark,
+                        surfaceColor: surfaceColor,
+                        children: [
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.chart_bar_fill,
+                            iconColor: AppFlavorColor.primary,
+                            title: 'For Investors',
+                            subtitle:
+                                'Copy successful strategies of other traders',
+                            onTap: () => Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                    builder: (context) => LeaderboardScreen())),
+                            isFirst: true,
+                            isLast: false,
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.arrow_2_circlepath,
+                            iconColor: const Color(0xFF007AFF),
+                            title: 'My Copy',
+                            subtitle: 'Your active Copy, MAM & PAMM accounts',
+                            onTap: () => Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                    builder: (context) =>
+                                        TradingManagementScreen())),
+                            isFirst: false,
+                            isLast: false,
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.group_solid,
+                            iconColor: const Color(0xFF34C759),
+                            title: 'IB Room',
+                            subtitle: 'IB Reports',
+                            onTap: () => Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                    builder: (context) => IbReport())),
+                            isFirst: false,
+                            isLast: true,
+                          ),
+                        ],
+                      ),
+                      _buildSection(
+                        context: context,
+                        title: 'Support',
+                        isDark: isDark,
+                        surfaceColor: surfaceColor,
+                        children: [
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.question_circle_fill,
+                            iconColor: const Color(0xFF007AFF),
+                            title: 'Help Desk',
+                            subtitle: 'Find answers to your questions',
+                            onTap: () => Navigator.push(context,
+                                SlidePageRoute(page: HelpdeskSupportScreen())),
+                            isFirst: true,
+                            isLast: false,
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.doc_text_fill,
+                            iconColor: const Color(0xFF5856D6),
+                            title: 'Legal Documents',
+                            subtitle: FlavorAssets.appName,
+                            onTap: () => Navigator.push(context,
+                                SlidePageRoute(page: LegalDocumentsScreen())),
+                            isFirst: false,
+                            isLast: false,
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.chat_bubble_text_fill,
+                            iconColor: const Color(0xFF32ADE6),
+                            title: 'Feedback',
+                            subtitle: "We'd love to hear your thoughts",
+                            onTap: () => Navigator.push(context,
+                                SlidePageRoute(page: FeedbackScreen())),
+                            isFirst: false,
+                            isLast: false,
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.hand_thumbsup_fill,
+                            iconColor: const Color(0xFFFF9F0A),
+                            title: 'Rate the App',
+                            subtitle: 'Love the app? Rate us!',
+                            isFirst: false,
+                            isLast: false,
+                          ),
+                          _buildMenuItem(
+                            context: context,
+                            isDark: isDark,
+                            icon: CupertinoIcons.info_circle_fill,
+                            iconColor: Colors.grey.shade500,
+                            title: 'About the App',
+                            onTap: () => Navigator.push(context,
+                                SlidePageRoute(page: AboutAppScreen())),
+                            isFirst: false,
+                            isLast: true,
+                          ),
+                        ],
+                      ),
+
+                      // ── Log Out ──
+                      _buildSection(
+                        context: context,
+                        title: '',
+                        isDark: isDark,
+                        surfaceColor: surfaceColor,
+                        children: [
+                          BlocBuilder<UserProfileBloc, UserProfileState>(
+                            builder: (context, state) {
+                              if (state is UserProfileLoaded) {
+                                return _buildMenuItem(
                                   context: context,
-                                  trailing: _buildKycStatusBadge(status),
-                                ),
-                                BlocBuilder<UserProfileBloc, UserProfileState>(
-                                  builder: (context, state) {
-                                    if (state is UserProfileLoading) {
-                                      return const Loader();
-                                    } else if (state is UserProfileLoaded) {
-                                      final bank = state.profile.profile?.bank;
-
-                                      return bank != null
-                                          ? _buildPremiumBenefitItem(
-                                              onTap: () {
-                                                Navigator.push(
-                                                    context,
-                                                    SlidePageRoute(
-                                                        page:
-                                                            UpdateBankScreen()));
-                                              },
-                                              context: context,
-                                              icon:
-                                                  Icons.account_balance_rounded,
-                                              title: 'Bank Account',
-                                            )
-                                          : Container(
-                                              margin:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 8),
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: [
-                                                    Colors.amber.shade50,
-                                                    Colors.orange.shade50,
-                                                  ],
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                                border: Border.all(
-                                                  color: Colors.orange
-                                                      .withOpacity(0.2),
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              padding: const EdgeInsets.all(20),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(12),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          gradient:
-                                                              LinearGradient(
-                                                            colors: [
-                                                              Colors.orange
-                                                                  .shade100,
-                                                              Colors.orange
-                                                                  .shade200,
-                                                            ],
-                                                          ),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(16),
-                                                        ),
-                                                        child: Icon(
-                                                          CupertinoIcons
-                                                              .person_circle,
-                                                          size: 28,
-                                                          color: Colors
-                                                              .orange.shade700,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 16),
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              'Complete Your Profile',
-                                                              style: TextStyle(
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color: Colors
-                                                                    .orange
-                                                                    .shade800,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                                height: 4),
-                                                            Text(
-                                                              'Fill in your account details to make your first deposit',
-                                                              style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: Colors
-                                                                    .orange
-                                                                    .shade700,
-                                                                height: 1.3,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  PremiumAppButton(
-                                                    text: 'Complete Profile',
-                                                    icon: Icons
-                                                        .person_add_rounded,
-                                                    showIcon: true,
-                                                    height: 48,
-                                                    backgroundColor:
-                                                        Colors.orange.shade600,
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    enableGradient: false,
-                                                    onPressed: () {
-                                                      Navigator.push(
-                                                          context,
-                                                          SlidePageRoute(
-                                                              page:
-                                                                  AddBankAccount()));
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                    } else {
-                                      return const SizedBox.shrink();
-                                    }
-                                  },
-                                ),
-                              ],
-                            );
-                          } else {
-                            return const SizedBox.shrink();
-                          }
-                        },
-                      ),
-                      _buildPremiumBenefitItem(
-                        onTap: () {
-                          Navigator.push(
-                              context, SlidePageRoute(page: SavingScreen()));
-                        },
-                        context: context,
-                        icon: Icons.credit_card,
-                        title: 'Savings',
-                      )
-                    ],
-                  ),
-                  _buildAnimatedSection(
-                    title: 'Referral Program',
-                    children: [
-                      _buildPremiumBenefitItem(
-                        context: context,
-                        icon: Icons.account_balance_wallet_rounded,
-                        iconColor: Colors.purple.shade600,
-                        title:
-                            'Earn stable income by introducing clients to ${FlavorAssets.appName}',
-                        subtitle: Text(
-                          'Share your referral link and earn commissions',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                                  isDark: isDark,
+                                  icon: CupertinoIcons.square_arrow_left_fill,
+                                  iconColor: const Color(0xFFFF3B30),
+                                  title: 'Log Out',
+                                  subtitle: state.profile.profile?.email ?? '',
+                                  onTap: () => showLogoutDialog(context),
+                                  isFirst: true,
+                                  isLast: true,
+                                  titleColor: const Color(0xFFFF3B30),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
                           ),
-                        ),
-                        onTap: () {
-                          showActionSheet(context);
-                        },
+                        ],
                       ),
                     ],
                   ),
-                  _buildAnimatedSection(
-                    title: 'Social Trading',
-                    children: [
-                      _buildPremiumBenefitItem(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              CupertinoPageRoute(
-                                  builder: (context) => LeaderboardScreen()));
-                        },
-                        context: context,
-                        icon: Icons.person_add,
-                        iconColor: AppFlavorColor.primary,
-                        title: 'For investors',
-                        subtitle: Text(
-                          'Copy successful strategies of other traders',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      _buildPremiumBenefitItem(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              CupertinoPageRoute(
-                                  builder: (context) =>
-                                      TradingManagementScreen()));
-                        },
-                        context: context,
-                        icon: Icons.person_add,
-                        iconColor: AppFlavorColor.primary,
-                        title: 'My Copy',
-                        subtitle: Text(
-                          'Your active Copy, MAM & PAMM accounts',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      _buildPremiumBenefitItem(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              CupertinoPageRoute(
-                                  builder: (context) => IbReport()));
-                        },
-                        context: context,
-                        icon: Icons.group_rounded,
-                        iconColor: Colors.green.shade600,
-                        title: 'IB Room',
-                        subtitle: Text(
-                          'IB Reports',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildAnimatedSection(
-                    title: 'Support',
-                    children: [
-                      _buildPremiumBenefitItem(
-                        icon: CupertinoIcons.question_circle_fill,
-                        iconColor: Colors.blue.shade600,
-                        context: context,
-                        title: 'Help Desk',
-                        onTap: () {
-                          Navigator.push(context,
-                              SlidePageRoute(page: HelpdeskSupportScreen()));
-                        },
-                        subtitle: Text(
-                          'Find answers to your questions',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      _buildPremiumBenefitItem(
-                        icon: CupertinoIcons.doc_text_fill,
-                        iconColor: Colors.indigo.shade600,
-                        context: context,
-                        onTap: () {
-                          Navigator.push(context,
-                              SlidePageRoute(page: LegalDocumentsScreen()));
-                        },
-                        title: 'Legal Documents',
-                        subtitle: Text(
-                          FlavorAssets.appName,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      _buildPremiumBenefitItem(
-                        icon: Icons.feedback_rounded,
-                        iconColor: Colors.teal.shade600,
-                        context: context,
-                        title: 'Feedback',
-                        onTap: () {
-                          Navigator.push(
-                              context, SlidePageRoute(page: FeedbackScreen()));
-                        },
-                        subtitle: Text(
-                          "We'd love to hear your thoughts on our platform",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      _buildPremiumBenefitItem(
-                        icon: CupertinoIcons.hand_thumbsup_fill,
-                        iconColor: Colors.pink.shade600,
-                        title: 'Rate the App',
-                        context: context,
-                        subtitle: Text(
-                          "Love the app? Rate us or reach out for support",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      _buildPremiumBenefitItem(
-                        icon: CupertinoIcons.info_circle_fill,
-                        iconColor: Colors.grey.shade600,
-                        title: 'About the app',
-                        context: context,
-                        onTap: () {
-                          Navigator.push(
-                              context, SlidePageRoute(page: AboutAppScreen()));
-                        },
-                      ),
-                    ],
-                  ),
-                  _buildAnimatedSection(
-                    title: '',
-                    children: [
-                      BlocBuilder<UserProfileBloc, UserProfileState>(
-                        builder: (context, state) {
-                          if (state is UserProfileLoading) {
-                            return const Loader();
-                          } else if (state is UserProfileError) {
-                            return const SizedBox.shrink();
-                          } else if (state is UserProfileLoaded) {
-                            return _buildPremiumBenefitItem(
-                              icon: Icons.logout_rounded,
-                              title: 'Log Out',
-                              onTap: () {
-                                showLogoutDialog(context);
-                              },
-                              iconColor: Colors.red.shade600,
-                              context: context,
-                              subtitle: Text(
-                                state.profile.profile?.email ?? '',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                ),
               ),
             ),
           ),
@@ -597,6 +428,413 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ─────────────────────────────────────────────
+  // User Header Card
+  // ─────────────────────────────────────────────
+  Widget _buildUserHeaderCard(
+      BuildContext context, Profile? profile, bool isDark, Color surfaceColor) {
+    final name = profile?.fullName ?? '';
+    final email = profile?.email ?? '';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final kycStatus = profile?.kycStatus ?? 'pending';
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppFlavorColor.primary,
+                      AppFlavorColor.darkPrimary
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Name & email
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // KYC pill — top-right corner
+        Positioned(
+          top: 4,
+          right: 16,
+          child: _buildKycPill(kycStatus),
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Section Builder
+  // ─────────────────────────────────────────────
+  Widget _buildSection({
+    required BuildContext context,
+    required String title,
+    required bool isDark,
+    required Color surfaceColor,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8, top: 20),
+            child: Text(
+              title.toUpperCase(),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: isDark ? Colors.white38 : Colors.black38,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Menu Item (inside a section card)
+  // ─────────────────────────────────────────────
+  Widget _buildMenuItem({
+    required BuildContext context,
+    required bool isDark,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+    Color? titleColor,
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.vertical(
+              top: isFirst ? const Radius.circular(16) : Radius.zero,
+              bottom: isLast ? const Radius.circular(16) : Radius.zero,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  // Icon container
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 18),
+                  ),
+                  const SizedBox(width: 14),
+                  // Title + subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: titleColor ??
+                                (isDark ? Colors.white : Colors.black87),
+                          ),
+                        ),
+                        if (subtitle != null && subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white38 : Colors.black38,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  // Trailing widget or arrow
+                  if (trailing != null) ...[
+                    const SizedBox(width: 8),
+                    trailing,
+                  ] else if (onTap != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      CupertinoIcons.chevron_right,
+                      size: 14,
+                      color: isDark ? Colors.white24 : Colors.black26,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 64,
+            endIndent: 0,
+            color: isDark ? Colors.white10 : Colors.black.withOpacity(0.07),
+          ),
+      ],
+    );
+  }
+
+  // single standalone card item (not grouped)
+  Widget _buildSingleItem({
+    required BuildContext context,
+    required bool isDark,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+    VoidCallback? onTap,
+  }) {
+    return _buildMenuItem(
+      context: context,
+      isDark: isDark,
+      icon: icon,
+      iconColor: iconColor,
+      title: title,
+      subtitle: subtitle,
+      onTap: onTap,
+      isFirst: true,
+      isLast: true,
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Complete Profile Banner
+  // ─────────────────────────────────────────────
+  Widget _buildCompleteProfileBanner(BuildContext context, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.orange.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(CupertinoIcons.person_crop_circle_badge_plus,
+                color: Colors.orange.shade700, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Complete Your Profile',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Add banking details to enable deposits',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () =>
+                Navigator.push(context, SlidePageRoute(page: AddBankAccount())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade600,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Add',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // KYC Status Pill
+  // ─────────────────────────────────────────────
+  Widget _buildKycPill(String status, {String? overrideLabel}) {
+    Color bg;
+    Color text;
+    String label;
+    IconData icon;
+
+    switch (status) {
+      case 'verified':
+        bg = const Color(0xFFD4EDDA);
+        text = const Color(0xFF1B7A36);
+        label = overrideLabel ?? 'Verified';
+        icon = CupertinoIcons.checkmark_seal_fill;
+        break;
+      case 'under_review':
+        bg = const Color(0xFFD1ECF1);
+        text = const Color(0xFF0C5460);
+        label = overrideLabel ?? 'In Review';
+        icon = CupertinoIcons.time;
+        break;
+      case 'rejected':
+        bg = const Color(0xFFF8D7DA);
+        text = const Color(0xFF721C24);
+        label = overrideLabel ?? 'Rejected';
+        icon = CupertinoIcons.xmark_circle_fill;
+        break;
+      default:
+        bg = const Color(0xFFFFF3CD);
+        text = const Color(0xFF856404);
+        label = overrideLabel ?? 'Pending';
+        icon = CupertinoIcons.exclamationmark_circle_fill;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: text),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: text,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // KYC navigation (unchanged logic)
+  // ─────────────────────────────────────────────
   void _handleKycNavigation(
       BuildContext context, String status, bool hasDocuments) {
     switch (status) {
@@ -620,203 +858,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  Widget _buildKycDocumentsSection(DocumentType docType, String status) {
-    final docName = docType.value ?? 'Document';
-    final submittedAt = docType.submittedAt;
-    final formattedDate = submittedAt ?? 'N/A';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.folder_outlined,
-                  size: 18, color: AppFlavorColor.primary),
-              const SizedBox(width: 8),
-              Text(
-                'KYC Documents',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: AppColor.blackColor,
-                ),
-              ),
-              const Spacer(),
-              _buildKycStatusBadge(status),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Document info
-          Row(
-            children: [
-              _buildDocInfoChip(Icons.description_outlined, docName),
-              const SizedBox(width: 10),
-              _buildDocInfoChip(Icons.calendar_today_outlined, formattedDate),
-            ],
-          ),
-          // Image thumbnails
-          if (docType.frontImageUrl != null ||
-              docType.backImageUrl != null) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                if (docType.frontImageUrl != null)
-                  _buildDocImageThumb('Front Side', docType.frontImageUrl!),
-                if (docType.frontImageUrl != null &&
-                    docType.backImageUrl != null)
-                  const SizedBox(width: 12),
-                if (docType.backImageUrl != null)
-                  _buildDocImageThumb('Back Side', docType.backImageUrl!),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDocInfoChip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: AppColor.greyColor),
-          const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColor.blackColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDocImageThumb(String label, String imageUrl) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColor.greyColor,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imageUrl,
-              height: 80,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (ctx, err, stack) => Container(
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Icon(Icons.image_not_supported_outlined,
-                      color: AppColor.greyColor, size: 24),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKycStatusBadge(String status) {
-    MaterialColor badgeColor;
-    Color textColor;
-    IconData icon;
-    String label;
-
-    switch (status) {
-      case 'verified':
-        badgeColor = Colors.green;
-        textColor = Colors.green.shade700;
-        icon = Icons.verified_rounded;
-        label = 'Verified';
-        break;
-      case 'under_review':
-        badgeColor = Colors.blue;
-        textColor = Colors.blue.shade700;
-        icon = Icons.hourglass_top_rounded;
-        label = 'Under Review';
-        break;
-      case 'rejected':
-        badgeColor = Colors.red;
-        textColor = Colors.red.shade700;
-        icon = Icons.cancel_rounded;
-        label = 'Rejected';
-        break;
-      case 'pending':
-      default:
-        badgeColor = Colors.orange;
-        textColor = Colors.orange.shade700;
-        icon = Icons.pending_rounded;
-        label = 'Pending';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [badgeColor.shade100, badgeColor.shade200],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: badgeColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: textColor, size: 14),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ─────────────────────────────────────────────
+  // KYC status badge (legacy, for profile_screen backward compat)
+  // ─────────────────────────────────────────────
+  Widget _buildKycStatusBadge(String status) => _buildKycPill(status);
 
   void _showRejectedDialog(BuildContext context) {
     showDialog(
@@ -874,189 +919,19 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildPremiumBenefitItem({
-    required IconData icon,
-    required String title,
-    Widget? subtitle,
-    Widget? trailing,
-    IconData? arrowIcon,
-    Function()? onTap,
-    Color? iconColor,
-    required BuildContext context,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.transparent,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        (iconColor ?? Colors.blue.shade600).withOpacity(0.1),
-                        (iconColor ?? Colors.blue.shade600).withOpacity(0.2),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color:
-                          (iconColor ?? Colors.blue.shade600).withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: iconColor ?? Colors.blue.shade600,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        subtitle,
-                      ],
-                    ],
-                  ),
-                ),
-                if (trailing != null) ...[
-                  const SizedBox(width: 12),
-                  trailing,
-                ],
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    arrowIcon ?? Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPremiumInvestorsOption({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-    Color? iconColor,
-    VoidCallback? onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.only(left: 20, right: 4, bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: context.scaffoldBackgroundColor,
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: iconColor ?? AppFlavorColor.icon,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
+  // ─────────────────────────────────────────────
+  // Referral bottom sheet (logic unchanged)
+  // ─────────────────────────────────────────────
   void showActionSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.appBarGradientColor,
-                context.appBarGradientColorSecond,
-              ],
-            ),
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
           ),
           child: SafeArea(
             child: Column(
@@ -1064,23 +939,33 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 const SizedBox(height: 12),
                 Container(
-                  width: 40,
+                  width: 36,
                   height: 4,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Referral Program',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 BlocBuilder<UserProfileBloc, UserProfileState>(
                   builder: (context, state) {
-                    if (state is UserProfileLoading) {
-                      return const Loader();
-                    } else if (state is UserProfileError) {
-                      return const SizedBox.shrink();
-                    } else if (state is UserProfileLoaded) {
-                      return _buildPremiumModalItem(
-                        icon: Icons.share_rounded,
+                    if (state is UserProfileLoaded) {
+                      return _buildModalItem(
+                        isDark: isDark,
+                        icon: CupertinoIcons.share,
+                        iconColor: AppFlavorColor.primary,
                         title: 'Share the link',
                         subtitle: 'Share your referral link with friends',
                         onTap: () {
@@ -1093,13 +978,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                     return const SizedBox.shrink();
                   },
                 ),
-                _buildPremiumModalItem(
-                  icon: Icons.open_in_new_rounded,
+                _buildModalItem(
+                  isDark: isDark,
+                  icon: CupertinoIcons.arrow_up_right_square,
+                  iconColor: const Color(0xFF007AFF),
                   title: 'Learn more',
                   subtitle: 'Discover how our referral program works',
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -1110,8 +995,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildPremiumModalItem({
+  Widget _buildModalItem({
+    required bool isDark,
     required IconData icon,
+    required Color iconColor,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -1125,40 +1012,30 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      colors: AppFlavorColor.buttonGradient
-                          .map((color) => color.withOpacity(0.2))
-                          .toList()),
+                  color: iconColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: AppFlavorColor.primary,
-                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    Text(title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: isDark ? Colors.white : Colors.black,
+                        )),
+                    Text(subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white54 : Colors.black45,
+                        )),
                   ],
                 ),
               ),
@@ -1169,7 +1046,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ─────────────────────────────────────────────
+  // Logout Dialog (logic unchanged)
+  // ─────────────────────────────────────────────
   void showLogoutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -1178,17 +1059,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           backgroundColor: Colors.transparent,
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.white, Colors.red.shade50],
-              ),
+              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -1196,80 +1073,97 @@ class _ProfileScreenState extends State<ProfileScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(28),
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        width: 60,
+                        height: 60,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.red.shade100, Colors.red.shade200],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
+                          color: const Color(0xFFFF3B30).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        child: Icon(
-                          Icons.logout_rounded,
-                          color: context.tabLabelColor,
-                          size: 32,
+                        child: const Icon(
+                          CupertinoIcons.square_arrow_left_fill,
+                          color: Color(0xFFFF3B30),
+                          size: 28,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
                       Text(
-                        'Are you sure?',
+                        'Log Out?',
                         style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppFlavorColor.darkPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'You will be logged out of your account',
+                        'You will be signed out of your account.',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
+                          color: isDark ? Colors.white54 : Colors.black45,
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                    ),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   child: Row(
                     children: [
                       Expanded(
-                        child: PremiumAppButton(
-                          text: 'Cancel',
-                          enableGradient: false,
-                          backgroundColor: Colors.grey.shade200,
-                          foregroundColor: Colors.grey.shade700,
-                          enableShadow: false,
-                          height: 48,
-                          onPressed: () => Navigator.pop(context),
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white12
+                                  : Colors.black.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: PremiumAppButton(
-                          text: 'Log Out',
-                          backgroundColor: AppFlavorColor.primary,
-                          foregroundColor: AppColor.whiteColor,
-                          enableGradient: false,
-                          height: 48,
-                          icon: Icons.logout_rounded,
-                          showIcon: true,
-                          onPressed: () {
+                        child: GestureDetector(
+                          onTap: () {
                             Navigator.pop(context);
                             ApiService.logout(context);
                           },
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF3B30),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Log Out',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -1283,36 +1177,37 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildPremiumSectionCard(List<Widget> children) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.appBarGradientColor,
-            context.appBarGradientColorSecond,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
+  // ─────────────────────────────────────────────
+  // Legacy helpers (kept for backward compat with other references)
+  // ─────────────────────────────────────────────
+  Widget _buildPremiumBenefitItem({
+    required IconData icon,
+    required String title,
+    Widget? subtitle,
+    Widget? trailing,
+    IconData? arrowIcon,
+    Function()? onTap,
+    Color? iconColor,
+    required BuildContext context,
+  }) {
+    return _buildMenuItem(
+      context: context,
+      isDark: Theme.of(context).brightness == Brightness.dark,
+      icon: icon,
+      iconColor: iconColor ?? Colors.blue,
+      title: title,
+      trailing: trailing,
+      onTap: onTap,
+      isFirst: true,
+      isLast: true,
     );
+  }
+
+  Widget _buildKycDocumentsSection(DocumentType docType, String status) {
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPremiumSectionCard(List<Widget> children) {
+    return Column(children: children);
   }
 }
