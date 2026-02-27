@@ -21,6 +21,14 @@ class TradeCubit extends Cubit<TradeState> {
   int _watchdogRetryCount = 0;
   static const int _maxWatchdogRetries = 3;
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Pending-order poller: fires every 5s when pending trades exist
+  // to catch limit-order executions that may not arrive via WS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Timer? _pendingPoller;
+  String? _pendingPollerAccountId;
+  static const _pendingPollInterval = Duration(seconds: 5);
+
   String? _lastJwt;
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -211,6 +219,66 @@ class TradeCubit extends Cubit<TradeState> {
       debugPrint("Error fetching trades: $e");
       emit(state.copyWith(isLoading: false));
     }
+
+    // Always refresh pending trades in sync with open trades
+    await fetchPendingTrades(accountId);
+  }
+
+  Future<void> fetchPendingTrades(String accountId) async {
+    try {
+      final response = await ApiService.getTradesByStatus(accountId, 'pending');
+      if (response.success && response.data != null) {
+        List<TradeModel> pending = [];
+        if (response.data!['results'] != null) {
+          pending = (response.data!['results'] as List)
+              .map((e) => TradeModel.fromJson(e))
+              .toList();
+        }
+        debugPrint(
+            '📋 [TradeCubit] Fetched ${pending.length} pending trade(s)');
+        if (!isClosed) {
+          emit(state.copyWith(pendingTrades: pending));
+          // Auto-manage the poller based on whether we still have pending trades
+          if (pending.isNotEmpty) {
+            _startPendingPoller(accountId);
+          } else {
+            _stopPendingPoller();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching pending trades: $e');
+    }
+  }
+
+  void _startPendingPoller(String accountId) {
+    // Already polling for this account — do nothing
+    if (_pendingPoller != null && _pendingPollerAccountId == accountId) return;
+
+    _stopPendingPoller(); // cancel any previous poller for a different account
+    _pendingPollerAccountId = accountId;
+    debugPrint(
+        '⏰ [PendingPoller] Started — polling every ${_pendingPollInterval.inSeconds}s');
+
+    _pendingPoller = Timer.periodic(_pendingPollInterval, (_) async {
+      if (isClosed) {
+        _stopPendingPoller();
+        return;
+      }
+      debugPrint('🔄 [PendingPoller] Checking for executed pending orders...');
+      // Fetch open trades first (handles a pending→open transition)
+      // fetchOpenTrades already calls fetchPendingTrades at the end
+      await fetchOpenTrades(accountId);
+    });
+  }
+
+  void _stopPendingPoller() {
+    if (_pendingPoller != null) {
+      debugPrint('⏹️ [PendingPoller] Stopped — no pending trades');
+      _pendingPoller!.cancel();
+      _pendingPoller = null;
+      _pendingPollerAccountId = null;
+    }
   }
 
   Future<void> createTrade({
@@ -230,14 +298,21 @@ class TradeCubit extends Cubit<TradeState> {
       if (target != null) requestData['target'] = target;
 
       debugPrint("📤 [TradeCubit] Placing Trade...");
+      debugPrint("📤 [TradeCubit] Payload: $requestData");
 
       final res = await ApiService.createTrade(requestData);
 
       if (res.success) {
-        debugPrint("✅ Trade Placed! Refreshing list...");
+        debugPrint("✅ Trade Placed! Refreshing open + pending lists...");
         emit(state.copyWith(
             successMessage: res.message ?? "Trade Placed", isLoading: false));
+        // Fetch both open (market) and pending (limit) trades
         await fetchOpenTrades(payload.tradeAccountId);
+        // fetchPendingTrades is already called at the end of fetchOpenTrades,
+        // but call it again explicitly for limit orders to ensure immediacy.
+        if (payload.executionType == 'limit') {
+          await fetchPendingTrades(payload.tradeAccountId);
+        }
       } else {
         emit(state.copyWith(
             isLoading: false, errorMessage: res.message ?? "Failed"));
@@ -410,6 +485,10 @@ class TradeCubit extends Cubit<TradeState> {
         List<TradeModel> currentActive = List.from(state.activeTrades);
         currentActive.removeWhere((t) => t.id == tradeId);
 
+        // ✅ Also remove from pending so cancelled limit orders disappear immediately
+        List<TradeModel> currentPending = List.from(state.pendingTrades);
+        currentPending.removeWhere((t) => t.id == tradeId);
+
         List<TradeModel> currentHistory = List.from(state.historyTrades);
         String pnlMessage = "Trade Closed";
 
@@ -434,6 +513,7 @@ class TradeCubit extends Cubit<TradeState> {
         }
         emit(state.copyWith(
             activeTrades: currentActive,
+            pendingTrades: currentPending,
             historyTrades: currentHistory,
             successMessage: pnlMessage));
         fetchHistoryTrades(accountId);
@@ -450,6 +530,7 @@ class TradeCubit extends Cubit<TradeState> {
   @override
   Future<void> close() {
     _equityWatchdog?.cancel();
+    _pendingPoller?.cancel();
     _lastKnownPnL.clear();
     _lastKnownEquity = null;
     return super.close();

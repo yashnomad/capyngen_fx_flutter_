@@ -42,7 +42,8 @@ class NewOrderScreen extends StatefulWidget {
 
 class _NewOrderScreenState extends State<NewOrderScreen> {
   String selectedType = 'Market Execution';
-  String? _selectedExecution = 'Market';
+  // Always 'Market' or 'Limit' — never null
+  String _selectedExecution = 'Market';
   String selectedUnit = 'Lots';
   double sliderValue = 0;
   String selectedSide = 'Buy';
@@ -120,11 +121,19 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                                           0.1;
 
                                       final String executionType =
-                                          _selectedExecution?.toLowerCase() ??
-                                              'market';
+                                          _selectedExecution.toLowerCase();
                                       final double? limitPrice =
                                           double.tryParse(
                                               _limitPriceCtrl.text.trim());
+
+                                      // For limit orders, require a valid limit price
+                                      if (executionType == 'limit' &&
+                                          limitPrice == null) {
+                                        SnackBarService.showError(
+                                            'Please enter a valid Limit Price');
+                                        Navigator.pop(context);
+                                        return;
+                                      }
 
                                       final double? tpValue =
                                           _tpCtrl.text.isEmpty
@@ -137,7 +146,10 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                                               : double.tryParse(
                                                   _slCtrl.text.trim());
 
-                                      double avgPrice;
+                                      // avgPrice is the validation reference price:
+                                      // - For Market orders: live ask (buy) / bid (sell)
+                                      // - For Limit orders: the user-entered limit price
+                                      final double avgPrice;
                                       if (executionType == 'limit' &&
                                           limitPrice != null) {
                                         avgPrice = limitPrice;
@@ -148,20 +160,20 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                                       }
 
                                       debugPrint(
-                                          "🔍 Validation Check: Side=$selectedSide, Price=$avgPrice, SL=$slValue, TP=$tpValue");
+                                          '🔍 Validation: type=$executionType side=$selectedSide refPrice=$avgPrice SL=$slValue TP=$tpValue');
 
                                       if (selectedSide == "Buy") {
                                         if (slValue != null &&
                                             slValue >= avgPrice) {
                                           SnackBarService.showError(
-                                              "Invalid SL: For Buy, Stop Loss ($slValue) must be lower than Current Price ($avgPrice)");
+                                              "Invalid SL: For Buy, Stop Loss ($slValue) must be lower than entry price ($avgPrice)");
                                           Navigator.pop(context);
                                           return;
                                         }
                                         if (tpValue != null &&
                                             tpValue <= avgPrice) {
                                           SnackBarService.showError(
-                                              "Invalid TP: For Buy, Take Profit ($tpValue) must be higher than Current Price ($avgPrice)");
+                                              "Invalid TP: For Buy, Take Profit ($tpValue) must be higher than entry price ($avgPrice)");
                                           Navigator.pop(context);
                                           return;
                                         }
@@ -169,14 +181,14 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                                         if (slValue != null &&
                                             slValue <= avgPrice) {
                                           SnackBarService.showError(
-                                              "Invalid SL: For Sell, Stop Loss ($slValue) must be higher than Current Price ($avgPrice)");
+                                              "Invalid SL: For Sell, Stop Loss ($slValue) must be higher than entry price ($avgPrice)");
                                           Navigator.pop(context);
                                           return;
                                         }
                                         if (tpValue != null &&
                                             tpValue >= avgPrice) {
                                           SnackBarService.showError(
-                                              "Invalid TP: For Sell, Take Profit ($tpValue) must be lower than Current Price ($avgPrice)");
+                                              "Invalid TP: For Sell, Take Profit ($tpValue) must be lower than entry price ($avgPrice)");
                                           Navigator.pop(context);
                                           return;
                                         }
@@ -256,9 +268,9 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                   ],
                 ),
                 const SizedBox(height: 15),
-                if (_selectedExecution == "Limit") ...[
+                if (_selectedExecution == 'Limit') ...[
                   _buildBorderedInput(
-                      controller: _limitPriceCtrl, hint: "Limit Price"),
+                      controller: _limitPriceCtrl, hint: 'Limit Price'),
                   const SizedBox(height: 15),
                 ],
                 SizedBox(height: 20),
@@ -293,12 +305,19 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
   }
 
   Widget _buildToggleOption(String title) {
-    bool isSelected = _selectedExecution == title;
+    final bool isSelected = _selectedExecution == title;
     return GestureDetector(
+      // Radio buttons: tapping already-selected option does nothing
       onTap: () {
-        setState(() {
-          _selectedExecution = isSelected ? null : title;
-        });
+        if (!isSelected) {
+          setState(() {
+            _selectedExecution = title;
+            // Clear limit price when switching back to Market
+            if (title == 'Market') {
+              _limitPriceCtrl.clear();
+            }
+          });
+        }
       },
       child: Row(
         children: [
